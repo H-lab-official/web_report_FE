@@ -15,7 +15,7 @@ import {
     Alert,
     AlertIcon,
     Box,
-    ButtonGroup, Text, Badge
+    Text, Badge
 } from '@chakra-ui/react';
 import { ArrowUpDownIcon } from '@chakra-ui/icons';
 import * as XLSX from 'xlsx';
@@ -33,6 +33,9 @@ interface TableRowProps {
 
 const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
     const [title, setTitle] = useState<string>('');
+    const [dateStart, setDateStart] = useState<string>('');
+    const [dateEnd, setDateEnd] = useState<string>('');
+    const [timeStart, setTimeStart] = useState<string>('');
     const [timeEnd, setTimeEnd] = useState<string>('');
     const [userID, setUserID] = useState<string>('');
     const [name, setName] = useState<string>('');
@@ -72,7 +75,20 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
     const [dislikedUsers, setDislikedUsers] = useState<{ [key: string]: string }>({});
     const [sharedUsers, setSharedUsers] = useState<{ [key: string]: string }>({});
     const [favUsers, setFavUsers] = useState<{ [key: string]: string }>({});
+    const formatDate = (dateString: string) => {
+        const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        return new Date(dateString).toLocaleDateString('th-TH', options);
+    };
 
+    const formatTime = (timeString: string) => {
+        if (!timeString) return '';
+        const timeParts = timeString.split(':');
+        if (timeParts.length !== 2) return '';
+        const hours = parseInt(timeParts[0], 10);
+        const minutes = timeParts[1];
+        const formattedTime = `${hours.toString().padStart(2, '0')}.${minutes} น.`;
+        return formattedTime;
+    };
     useEffect(() => {
         if (selectedLikes.length > 0) fetchUserDetails(selectedLikes, setLikedUsers);
         if (selectedDislikes.length > 0) fetchUserDetails(selectedDislikes, setDislikedUsers);
@@ -91,7 +107,10 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                 params: {
                     type,
                     title: title || undefined,
-                    endDate: timeEnd || undefined,
+                    date_start: dateStart || undefined,
+                    date_end: dateEnd || undefined,
+                    time_start: timeStart || undefined,
+                    time_end: timeEnd || undefined,
                     user_id: userID || undefined,
                     name: name || undefined,
                     user_like: userLike || undefined,
@@ -121,8 +140,14 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                     year: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit',
-                }),
+                }), date_start: formatDate(log.date_start),
+                date_end: formatDate(log.date_end),
+
+                time_start: formatTime(log.time_start),
+                time_end: formatTime(log.time_end),
+
             }));
+
 
             if (Array.isArray(formattedLogs)) {
                 setLogs(formattedLogs);
@@ -136,7 +161,20 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
             onOpen();
         }
     };
+    const countShares = (shares: any) => {
+        const countBySocial: { [key: string]: number } = { line: 0, facebook: 0, copy: 0, twitte: 0, whatsapp: 0 };
+        let totalCount = 0;
 
+        for (const userId in shares) {
+            for (const shareId in shares[userId]) {
+                const share = shares[userId][shareId];
+                totalCount++;
+                countBySocial[share.social] = (countBySocial[share.social] || 0) + 1;
+            }
+        }
+
+        return { totalCount, countBySocial };
+    };
     const fetchUserDetails = async (userIds: string[], setUserState: (users: { [key: string]: string }) => void) => {
         try {
             const responses = await Promise.all(
@@ -144,7 +182,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                     axios.get(`http://localhost:3000/users`, { params: { user_id: userId } })
                 )
             );
-
+            console.log('API Responses:', responses);
             const userMap: { [key: string]: string } = {};
             responses.forEach((response) => {
                 if (response.data.length > 0) {
@@ -153,11 +191,14 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                 }
             });
 
+            console.log('Fetched User Map:', userMap); // Add this line to log the fetched user map
+
             setUserState(userMap);
         } catch (error) {
             console.error('Error fetching user details:', error);
         }
     };
+
 
     const handleShowLikes = (likes: string[]) => {
         setSelectedLikes(likes);
@@ -197,6 +238,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
     const currentLogs = logs.slice(startIndex, endIndex);
+    console.log(currentLogs);
 
     const goToNextPage = () => {
         if (currentPage < totalPages) {
@@ -213,32 +255,139 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
     const goToPage = (page: number) => {
         setCurrentPage(page);
     };
-
-    const exportToExcel = () => {
-        const ws = XLSX.utils.json_to_sheet(logs.map((log, index) => ({
+    const handleExport = () => {
+        setTimeout(exportToExcel, 500); // Delay export to give state time to update
+    }
+    const exportToExcel = async () => {
+        // Helper function to fetch user details
+        const fetchUserDetailsForExport = async (userIds: string[]) => {
+            try {
+                const responses = await Promise.all(
+                    userIds.map(userId =>
+                        axios.get(`http://localhost:3000/users`, { params: { user_id: userId } })
+                    )
+                );
+    
+                const userMap: { [key: string]: string } = {};
+                responses.forEach((response) => {
+                    if (response.data.length > 0) {
+                        const user = response.data[0];
+                        userMap[user.id] = user.name;
+                    }
+                });
+                return userMap;
+            } catch (error) {
+                console.error('Error fetching user details:', error);
+                return {};
+            }
+        };
+    
+        // Fetch user details for likes, dislikes, shares, favs, and views
+        const likedUsersMap = await fetchUserDetailsForExport(
+            logs.flatMap(log => JSON.parse(log.user_like || '[]'))
+        );
+        const dislikedUsersMap = await fetchUserDetailsForExport(
+            logs.flatMap(log => JSON.parse(log.user_dislike || '[]'))
+        );
+        const sharedUsersMap = await fetchUserDetailsForExport(
+            logs.flatMap(log => Object.keys(JSON.parse(log.user_share || '{}')))
+        );
+        const favUsersMap = await fetchUserDetailsForExport(
+            logs.flatMap(log => Object.keys(JSON.parse(log.user_fav || '{}')))
+        );
+        const viewedUsersMap = await fetchUserDetailsForExport(
+            logs.flatMap(log => Object.keys(JSON.parse(log.user_view || '{}')))
+        );
+    
+        // Function to create sheets for user interactions
+        const createUserSheet = (logs: any[], key: string, parseFunc: (data: any, log: any) => any[], userMap: { [key: string]: string }) => {
+            const userLogs = logs.flatMap(log => {
+                const parsedData = log[key] ? parseFunc(JSON.parse(log[key]), log, userMap) : [];
+                return parsedData.map((item: any, index: number) => ({
+                    Log_No: startIndex + index + 1,
+                    ...item
+                }));
+            });
+            return XLSX.utils.json_to_sheet(userLogs);
+        };
+    
+        // Define parse functions for each interaction type
+        const parseLikesDislikes = (data: string[], log: any, userMap: { [key: string]: string }) =>
+            data.map(userId => ({
+                Name: userMap[userId] || 'Unknown',
+            }));
+    
+        const parseShares = (data: any, log: any, userMap: { [key: string]: string }) => {
+            const shares = [];
+            for (const userId in data) {
+                for (const shareId in data[userId]) {
+                    const share = data[userId][shareId];
+                    shares.push({
+                        Name: userMap[userId] || 'Unknown',
+                        Time: share.datetime,
+                        Social: share.social
+                    });
+                }
+            }
+            return shares;
+        };
+    
+        const parseFavs = (data: any, log: any, userMap: { [key: string]: string }) =>
+            Object.entries(data).map(([userId, favData]) => ({
+                Name: userMap[userId] || 'Unknown',
+                Status: favData.status,
+                Time: favData.datetime
+            }));
+    
+        const parseViews = (data: any, log: any, userMap: { [key: string]: string }) =>
+            Object.entries(data).map(([userId, viewData]) => ({
+                Name: userMap[userId] || 'Unknown',
+                View_Count: Object.keys(viewData).length,
+                Last_View: viewData[Object.keys(viewData).pop()].datetime
+            }));
+    
+        // Create the main sheet for logs
+        const logsSheet = XLSX.utils.json_to_sheet(logs.map((log, index) => ({
             No: startIndex + index + 1,
             title: log.title,
-            userID: log.user_id,
-            name: log.name,
+            date_start: log.date_start,
+            date_end: log.date_end,
             created_at: log.created_at,
-            updated_at: log.updated_at,
-            user_like: log.user_like,
-            user_dislike: log.user_dislike,
-            user_share: log.user_share,
-            user_fav: log.user_fav,
-            user_view: log.user_view,
+            user_like: log.user_like ? JSON.parse(log.user_like).length : 0,
+            user_dislike: log.user_dislike ? JSON.parse(log.user_dislike).length : 0,
+            user_share: log.user_share ? Object.keys(JSON.parse(log.user_share)).length : 0,
+            user_fav: log.user_fav ? Object.keys(JSON.parse(log.user_fav)).length : 0,
+            user_view: log.user_view ? Object.keys(JSON.parse(log.user_view)).length : 0,
             log_rating: log.log_rating,
             location_detail: log.location_detail,
             link_map: log.link_map,
             link_out: log.link_out,
         })));
-
+    
+        // Create the sheets for user interactions
+        const userLikesSheet = createUserSheet(logs, 'user_like', parseLikesDislikes, likedUsersMap);
+        const userDislikesSheet = createUserSheet(logs, 'user_dislike', parseLikesDislikes, dislikedUsersMap);
+        const userSharesSheet = createUserSheet(logs, 'user_share', parseShares, sharedUsersMap);
+        const userFavsSheet = createUserSheet(logs, 'user_fav', parseFavs, favUsersMap);
+        const userViewsSheet = createUserSheet(logs, 'user_view', parseViews, viewedUsersMap);
+    
+        // Create a new workbook and append all sheets
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Logs");
+        XLSX.utils.book_append_sheet(wb, logsSheet, "Logs");
+        XLSX.utils.book_append_sheet(wb, userLikesSheet, "User Likes");
+        XLSX.utils.book_append_sheet(wb, userDislikesSheet, "User Dislikes");
+        XLSX.utils.book_append_sheet(wb, userSharesSheet, "User Shares");
+        XLSX.utils.book_append_sheet(wb, userFavsSheet, "User Favs");
+        XLSX.utils.book_append_sheet(wb, userViewsSheet, "User Views");
+    
+        // Write the workbook and trigger the download
         const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
         const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(data, "logs.xlsx");
+        saveAs(data, name_page === 'ตารางสอบ' ? "logsExam.xlsx" : "logsTraining.xlsx");
     };
+    
+
+
 
     const sortLogs = (key: string) => {
         let direction = 'ascending';
@@ -280,6 +429,25 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                     />
                 </Td>
                 <Td>
+                    <Input
+                        placeholder='Select Start Date'
+                        size='md'
+                        type='date'
+                        value={dateStart}
+                        onChange={(e) => setDateStart(e.target.value)}
+                    />
+                </Td>
+                <Td>
+                    <Input
+                        placeholder='Select End Date'
+                        size='md'
+                        type='date'
+                        value={dateEnd}
+                        onChange={(e) => setDateEnd(e.target.value)}
+                    />
+                </Td>
+
+                <Td>
                     <Button variant="solid" sx={btnStype} onClick={handleSearch}>
                         Search
                     </Button>
@@ -311,16 +479,16 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                                             <Thead>
                                                 <Tr>
                                                     <Th>No.</Th>
-                                                    <Th>Title</Th>
+                                                    <Th>{name_page === 'ตารางสอบ' ? 'สถานที่สอบ' : 'หัวข้อ'}</Th>
+                                                    <Th>{name_page === 'ตารางสอบ' ? 'สอบวันที่' : 'เริ่มอบรมวันที่'}</Th>
+                                                    {name_page === 'ตารางสอบ' ? "" : <Th>ถึงวันที่</Th>}
 
                                                     <Th>Created At <ArrowUpDownIcon onClick={() => sortLogs('created_at')} className='cursor-pointer' /></Th>
-
                                                     <Th>User Like</Th>
                                                     <Th>User Dislike</Th>
                                                     <Th>User Share</Th>
                                                     <Th>User Fav</Th>
                                                     <Th>User View</Th>
-                                                   
                                                 </Tr>
                                             </Thead>
                                             <Tbody>
@@ -332,10 +500,10 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                                                                 {log.title}
                                                             </p>
                                                         </Td>
-
+                                                        <Td>{log.date_start}</Td>
+                                                        {name_page === 'ตารางสอบ' ? "" : <Td>{log.date_end}</Td>}
 
                                                         <Td>{log.created_at}</Td>
-
                                                         <Td>
                                                             <Badge
                                                                 colorScheme="blue"
@@ -355,13 +523,27 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                                                             </Badge>
                                                         </Td>
                                                         <Td>
-                                                            <Badge
-                                                                colorScheme="blue"
-                                                                cursor="pointer"
-                                                                onClick={() => handleShowShares(log.user_share ? JSON.parse(log.user_share) : {})}
-                                                            >
-                                                                {log.user_share ? Object.keys(JSON.parse(log.user_share)).length : 0}
-                                                            </Badge>
+                                                            <Box className='flex flex-col justify-start items-start gap-1'>
+                                                                <Box className='flex flex-row items-center justify-start gap-1'>
+                                                                    <Text>แชร์ทั้งหมด</Text>
+                                                                    <Badge
+                                                                        colorScheme="blue"
+                                                                        cursor="pointer"
+                                                                        onClick={() => handleShowShares(log.user_share ? JSON.parse(log.user_share) : {})}
+                                                                    >
+                                                                        {log.user_share ? countShares(JSON.parse(log.user_share)).totalCount : 0}
+                                                                    </Badge>
+                                                                </Box>
+
+                                                                <Box className='flex flex-row items-center justify-start gap-1'>
+                                                                    <Badge colorScheme='green'>Line: {log.user_share ? countShares(JSON.parse(log.user_share)).countBySocial.line : 0}</Badge>
+                                                                    <Badge colorScheme='green'>Facebook: {log.user_share ? countShares(JSON.parse(log.user_share)).countBySocial.facebook : 0}</Badge>
+                                                                    <Badge colorScheme='green'>Copy: {log.user_share ? countShares(JSON.parse(log.user_share)).countBySocial.copy : 0}</Badge>
+                                                                    <Badge colorScheme='green'>Twitter: {log.user_share ? countShares(JSON.parse(log.user_share)).countBySocial.twitte : 0}</Badge>
+                                                                    <Badge colorScheme='green'>WhatsApp: {log.user_share ? countShares(JSON.parse(log.user_share)).countBySocial.whatsapp : 0}</Badge>
+                                                                </Box>
+                                                            </Box>
+
                                                         </Td>
                                                         <Td>
                                                             <Badge
@@ -381,7 +563,6 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                                                                 {log.user_view ? Object.keys(JSON.parse(log.user_view)).length : 0}
                                                             </Badge>
                                                         </Td>
-
                                                     </Tr>
                                                 ))}
                                             </Tbody>
@@ -400,7 +581,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
 
                         <ModalFooter>
                             <Box display="flex" justifyContent="center" alignItems="center" gap={5}>
-                                <Button variant="solid" sx={btnStypeExcel} onClick={exportToExcel}>
+                                <Button variant="solid" sx={btnStypeExcel} onClick={handleExport}>
                                     Export to Excel
                                 </Button>
                                 <Button variant="solid" sx={btnStype} mr={3} onClick={onClose}>
