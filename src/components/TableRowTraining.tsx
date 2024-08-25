@@ -58,7 +58,7 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
         setTrainings([]);
 
         try {
-            const response = await axios.get('http://localhost:3000/training', {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/training`, {
                 params: { title: title || undefined },
             });
 
@@ -91,7 +91,7 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
         try {
             const responses = await Promise.all(
                 userIds.map(userId =>
-                    axios.get(`http://localhost:3000/users`, { params: { user_id: userId } })
+                    axios.get(`${import.meta.env.VITE_API_URL}/users`, { params: { user_id: userId } })
                 )
             );
 
@@ -190,7 +190,7 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
     const handleShowViews = async (views: any) => {
         const viewDetails = await Promise.all(
             Object.entries(views).map(async ([userId, viewData]) => {
-                const response = await axios.get(`http://localhost:3000/users`, { params: { user_id: userId } });
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/users`, { params: { user_id: userId } });
                 const userName = response.data.length > 0 ? response.data[0].name : 'Unknown';
                 return {
                     userId,
@@ -237,7 +237,7 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
             for (const chunk of chunks) {
                 const responses = await Promise.all(
                     chunk.map(userId =>
-                        axios.get(`http://localhost:3000/users`, { params: { user_id: userId } })
+                        axios.get(`${import.meta.env.VITE_API_URL}/users`, { params: { user_id: userId } })
                     )
                 );
 

@@ -65,7 +65,7 @@ const TableRowGoal: React.FC<TableRowProps> = ({ id, name_page }) => {
         setMyGoal([]);
 
         try {
-            const response = await axios.get('http://localhost:3000/mygoal', {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/mygoal`, {
                 params: {
 
                     // startDate: timeStart || undefined,

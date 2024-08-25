@@ -59,7 +59,7 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
         setLogs([]);
 
         try {
-            const response = await axios.get('http://localhost:3000/logs', {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/logs`, {
                 params: {
                     log_content,
                     startDate: timeStart || undefined,

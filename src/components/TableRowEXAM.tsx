@@ -103,7 +103,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
         setLogs([]);
 
         try {
-            const response = await axios.get('http://localhost:3000/appointments', {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/appointments`, {
                 params: {
                     type,
                     title: title || undefined,
@@ -179,7 +179,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
         try {
             const responses = await Promise.all(
                 userIds.map(userId =>
-                    axios.get(`http://localhost:3000/users`, { params: { user_id: userId } })
+                    axios.get(`${import.meta.env.VITE_API_URL}/users`, { params: { user_id: userId } })
                 )
             );
             console.log('API Responses:', responses);
@@ -219,7 +219,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
     const handleShowViews = async (views: any) => {
         const viewDetails = await Promise.all(
             Object.entries(views).map(async ([userId, viewData]) => {
-                const response = await axios.get(`http://localhost:3000/users`, { params: { user_id: userId } });
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/users`, { params: { user_id: userId } });
                 const userName = response.data.length > 0 ? response.data[0].name : 'Unknown';
                 return {
                     userId,
@@ -264,7 +264,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
             try {
                 const responses = await Promise.all(
                     userIds.map(userId =>
-                        axios.get(`http://localhost:3000/users`, { params: { user_id: userId } })
+                        axios.get(`${import.meta.env.VITE_API_URL}/users`, { params: { user_id: userId } })
                     )
                 );
     

@@ -49,7 +49,7 @@ const TableRowActivitys: React.FC<TableRowProps> = ({ id, name_page }) => {
         setNewsItems([]);
 
         try {
-            const response = await axios.get('http://localhost:3000/activitys', {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/activitys`, {
                 params: { title: title || undefined },
             });
 
@@ -81,7 +81,7 @@ const TableRowActivitys: React.FC<TableRowProps> = ({ id, name_page }) => {
         try {
             const responses = await Promise.all(
                 userIds.map(userId =>
-                    axios.get(`http://localhost:3000/users`, { params: { user_id: userId } })
+                    axios.get(`${import.meta.env.VITE_API_URL}/users`, { params: { user_id: userId } })
                 )
             );
 

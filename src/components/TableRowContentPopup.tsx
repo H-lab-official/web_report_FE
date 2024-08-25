@@ -22,7 +22,7 @@ const TableRowContentPopup: React.FC<TableRowContentPopupProps> = ({ id }) => {
     useEffect(() => {
         const fetchData = async () => {
             try {
-                const response = await axios.get(`http://localhost:3000/contentpopup?id=${id}`);
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/contentpopup?id=${id}`);
                 setContentData(response.data);
             } catch (error) {
                 console.error('Error fetching content data:', error);

@@ -48,7 +48,7 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
         setUsers([]);
 
         try {
-            const response = await axios.get('http://localhost:3000/users', {
+            const response = await axios.get(`${import.meta.env.VITE_API_URL}/users`, {
                 params: {
                     name: searchName || undefined,
                     current_rank: searchCurrentRank || undefined,

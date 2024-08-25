@@ -14,7 +14,7 @@ const ContentPopupTable: React.FC = () => {
     useEffect(() => {
         const fetchIds = async () => {
             try {
-                const response = await axios.get('http://localhost:3000/contentpopup');
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/contentpopup`);
                 const contentData = response.data;
                 const contentIds = contentData.map((content: any) => content.id);
                 setIds(contentIds);
