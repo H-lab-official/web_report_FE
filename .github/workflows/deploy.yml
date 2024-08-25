@@ -27,27 +27,27 @@ jobs:
         uses: webfactory/ssh-agent@v0.5.1
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
       - name: Deploy to DigitalOcean
         env:
-          HOST: ${{ secrets.SERVER_DOMAIN }}
-          USERNAME: ${{ secrets.SERVER_USERNAME }}
-          TARGET_DIR: /var/www/web_report_FE
-          APP_NAME: web_report_FE
+            HOST: ${{ secrets.SERVER_DOMAIN }}
+            USERNAME: ${{ secrets.SERVER_USERNAME }}
+            TARGET_DIR: /var/www/web_report_FE
+            APP_NAME: web_report_FE
         run: |
-          ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
-            export PATH=/root/.nvm/versions/node/v20.12.2/bin:$PATH
-            cd $TARGET_DIR
-            git pull origin main
-            npm install
-            mv ecosystem.config.js ecosystem.config.cjs
-            npm run build
-            if pm2 list | grep -q $APP_NAME; then
-              echo "Restarting application: $APP_NAME"
-              pm2 restart $APP_NAME
-            else
-              echo "Starting application: $APP_NAME"
-              pm2 start ecosystem.config.cjs
-            fi
-            pm2 save
-          EOF
+            ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << EOF
+              export PATH=/root/.nvm/versions/node/v20.12.2/bin:$PATH
+              cd $TARGET_DIR
+              git pull origin main
+              npm install
+              mv ecosystem.config.js ecosystem.config.cjs
+              npm run build
+              if pm2 list | grep -q $APP_NAME; then
+                echo "Restarting application: $APP_NAME"
+                pm2 restart $APP_NAME
+              else
+                echo "Starting application: $APP_NAME"
+                pm2 start ecosystem.config.cjs --only $APP_NAME
+              fi
+              pm2 save
+            EOF
+  
