@@ -13,8 +13,10 @@ export default defineConfig({
     rollupOptions: {
       external: ['react-router-dom'],
     },
+    outDir: 'dist', // Ensure the output directory is set correctly
+    assetsDir: 'assets', // Ensure assets like JS and CSS are correctly placed
   },
   server: {
-    port:3174,  // Use port 3001 for App 2
+    port: 3174,
   },
 });
