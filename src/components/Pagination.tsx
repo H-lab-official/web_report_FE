@@ -45,27 +45,28 @@ const Pagination: React.FC<PaginationProps> = ({ totalPages, currentPage, goToPa
     return (
         <Box mt={4} display="flex" justifyContent="center">
             <ButtonGroup>
-                <Button onClick={goToPreviousPage} disabled={currentPage === 1}>
+                <Button onClick={goToPreviousPage} disabled={currentPage === 1} colorScheme='teal'>
                     Previous
                 </Button>
 
                 {getPageNumbers().map((number, index) =>
                     number === '...' ? (
-                        <Button key={index} variant="ghost">
+                        <Button key={index} variant="solid" >
                             ...
                         </Button>
                     ) : (
                         <Button
                             key={index}
                             onClick={() => goToPage(Number(number))}
-                            variant={currentPage === number ? 'solid' : 'outline'}
+                            variant={currentPage === number ? 'solid' : 'solid'}
+                            colorScheme={currentPage===number?'teal':'gray'}
                         >
                             {number}
                         </Button>
                     )
                 )}
 
-                <Button onClick={goToNextPage} disabled={currentPage === totalPages}>
+                <Button onClick={goToNextPage} disabled={currentPage === totalPages} colorScheme='teal'>
                     Next
                 </Button>
             </ButtonGroup>

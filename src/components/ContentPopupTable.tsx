@@ -10,6 +10,7 @@ const ContentPopupTable: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
+
     useEffect(() => {
         const fetchIds = async () => {
             try {

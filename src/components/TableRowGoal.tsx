@@ -23,20 +23,25 @@ import { saveAs } from 'file-saver';
 import axios from 'axios';
 import './css/TableRow.css';
 import Pagination from './Pagination';
-import { btnStype, btnStypeExcel } from './css/stypeall'
+import {btnStype} from './css/stypeall'
 interface TableRowProps {
     id: number;
-    log_content: string;
+
     name_page: string
 }
 
-const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
+const TableRowGoal: React.FC<TableRowProps> = ({ id, name_page }) => {
     const [timeStart, setTimeStart] = useState<string>('');
     const [timeEnd, setTimeEnd] = useState<string>('');
     const [userID, setUserID] = useState<string>('');
     const [name, setName] = useState<string>('')
-    const [current_rank, setCurrentRank] = useState<string>('')
-    const [logs, setLogs] = useState<any[]>([]);
+    const [period, setPeriod] = useState<string>('')
+    const [goal, setGoal] = useState<string>('')
+    const [price, setPrice] = useState<string>('')
+    const [status, setStatus] = useState<string>('')
+    const [taskStartDate, setTaskStartDate] = useState<string>('')
+    const [taskEndDate, setTaskEndDate] = useState<string>('')
+    const [mygoal, setMyGoal] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -48,49 +53,69 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
     const { isOpen, onOpen, onClose } = useDisclosure();
 
     const [rankCounts, setRankCounts] = useState<{ [key: string]: number }>({});
+    console.log(mygoal);
 
     const handleSearch = async () => {
         setLoading(true);
         setError(null);
-        setLogs([]);
+        setMyGoal([]);
 
         try {
-            const response = await axios.get('http://localhost:3000/logs', {
+            const response = await axios.get('http://localhost:3000/mygoal', {
                 params: {
-                    log_content,
-                    startDate: timeStart || undefined,
-                    endDate: timeEnd || undefined,
+
+                    // startDate: timeStart || undefined,
+                    // endDate: timeEnd || undefined,
                     user_id: userID || undefined,
                     name: name || undefined,
-                    current_rank: current_rank || undefined,
+                    period: period || undefined,
+                    goal: goal || undefined,
+                    price: price || undefined,
+                    status: status || undefined,
+                    taskStartDate: taskStartDate || undefined,
+                    taskEndDate: taskEndDate || undefined
+
                 },
             });
 
 
 
-            const formattedLogs = response.data.map((log: any) => ({
-                ...log,
-                created_at: new Date(log.created_at).toLocaleString('th-TH', {
+            const formattedLogs = response.data.map((goal: any) => ({
+                ...goal,
+                created_at: new Date(goal.created_at).toLocaleString('th-TH', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit',
                 }),
-                updated_at: new Date(log.updated_at).toLocaleString('th-TH', {
+                updated_at: new Date(goal.updated_at).toLocaleString('th-TH', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit',
                 }),
+                date_start: new Date(goal.date_start).toLocaleString('th-TH', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }), date_end: new Date(goal.date_end).toLocaleString('th-TH', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                })
             }));
 
             if (Array.isArray(formattedLogs)) {
-                setLogs(formattedLogs);
+                setMyGoal(formattedLogs);
                 countRanks(formattedLogs);
             } else {
-                setLogs([]);
+                setMyGoal([]);
             }
         } catch (err) {
             setError('Error fetching logs');
@@ -100,28 +125,28 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
         }
     };
     const handleBadgeClick = async (rank: any) => {
-        setCurrentRank(rank);
+
         await handleSearch();
     };
 
 
-    const countRanks = (logs: any[]) => {
+    const countRanks = (mygoal: any[]) => {
         const counts: { [key: string]: number } = {};
-        logs.forEach(log => {
-            const rank = log.current_rank || 'Unknown';
+        mygoal.forEach(goal => {
+            const rank = goal.current_rank || 'Unknown';
             counts[rank] = (counts[rank] || 0) + 1;
         });
         setRankCounts(counts);
     };
-    const countName = (logs: any[], name: string) => {
-        const counts = logs.filter(log => log.name === name).length;
+    const countName = (mygoal: any[], name: string) => {
+        const counts = mygoal.filter(goal => goal.name === name).length;
         return counts;
     };
 
-    const totalPages = Math.ceil(logs.length / itemsPerPage);
+    const totalPages = Math.ceil(mygoal.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
     const endIndex = startIndex + itemsPerPage;
-    const currentLogs = logs.slice(startIndex, endIndex);
+    const currentLogs = mygoal.slice(startIndex, endIndex);
 
     const goToNextPage = () => {
         if (currentPage < totalPages) {
@@ -140,20 +165,27 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
     };
 
     const exportToExcel = () => {
-        const ws = XLSX.utils.json_to_sheet(logs.map((log, index) => ({
+        const ws = XLSX.utils.json_to_sheet(mygoal.map((goal, index) => ({
             No: startIndex + index + 1,
-            log_content: log.log_content,
-            userID: log.user_id,
-            name: log.name,
-            current_rank: log.current_rank,
-            startDate: log.created_at,
-            endDate: log.updated_at
+            userID: goal.user_id,
+            name: goal.name,
+            // startDate: goal.created_at,
+            // endDate: goal.updated_at,
+
+            period: goal.period,
+            goal: goal.goal,
+            price: goal.price,
+            status: goal.status,
+            taskStartDate: goal.date_start,
+            taskEndDate: goal.date_end
+
+
         })));
         const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "Logs");
+        XLSX.utils.book_append_sheet(wb, ws, "mygoal");
         const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
         const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(data, "logs.xlsx");
+        saveAs(data, "mygoal.xlsx");
     };
 
     const sortLogs = (key: string) => {
@@ -162,7 +194,7 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
             direction = 'descending';
         }
 
-        const sortedLogs = [...logs].sort((a, b) => {
+        const sortedLogs = [...mygoal].sort((a, b) => {
             if (a[key] < b[key]) {
                 return direction === 'ascending' ? -1 : 1;
             }
@@ -173,10 +205,9 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
         });
 
         setSortConfig({ key, direction });
-        setLogs(sortedLogs);
+        setMyGoal(sortedLogs);
     };
-    const nameCount = countName(logs, name);
-
+    const nameCount = countName(mygoal, name);
     return (
         <>
             <Tr>
@@ -197,16 +228,7 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
                     />
                 </Td>
                 <Td>
-                    <Select placeholder='กรุณาเลือก Rank' value={current_rank} onChange={(e) => setCurrentRank(e.target.value)}>
-                        <option value='AG'>AG</option>
-                        <option value='AVP'>AVP</option>
-                        <option value='DM'>DM</option>
-                        <option value='EVP'>EVP</option>
-                        <option value='SDM'>SDM</option>
-                        <option value='SUM'>SUM</option>
-                        <option value='UM'>UM</option>
-                        <option value='VP'>VP</option>
-                    </Select>
+
 
                 </Td>
                 <Td></Td>
@@ -229,16 +251,16 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
                     />
                 </Td>
                 <Td>
-                    <Button variant="solid" sx={btnStype} onClick={handleSearch}>
+                    <Button variant="solid" sx={btnStype}  onClick={handleSearch}>
                         Search
                     </Button>
                 </Td>
             </Tr>
 
             <Box>
-                <Modal isOpen={isOpen} onClose={onClose} size={'full'}>
+                <Modal isOpen={isOpen} onClose={onClose} size={'6xl'}>
                     <ModalOverlay />
-                    <ModalContent>
+                    <ModalContent className="custom-modal-content">
                         <ModalHeader>Search Results</ModalHeader>
                         <ModalCloseButton />
                         <ModalBody>
@@ -249,7 +271,7 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
                                     <AlertIcon />
                                     {error}
                                 </Alert>
-                            ) : logs.length === 0 ? (
+                            ) : mygoal.length === 0 ? (
                                 <Box textAlign="center" mt={4}>
                                     <Text>ไม่พบข้อมูล</Text>
                                 </Box>
@@ -281,25 +303,32 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
                                             <Thead>
                                                 <Tr>
                                                     <Th>No.</Th>
-                                                    <Th>log_content </Th>
-                                                    <Th>AGENCY code <ArrowUpDownIcon onClick={() => sortLogs('user_id')} className='cursor-pointer' /></Th>
-                                                    <Th>Full name <ArrowUpDownIcon onClick={() => sortLogs('name')} className='cursor-pointer' /></Th>
-                                                    <Th>Position<ArrowUpDownIcon onClick={() => sortLogs('current_rank')} className='cursor-pointer' /></Th>
+                                                    <Th>userID <ArrowUpDownIcon onClick={() => sortLogs('user_id')} className='cursor-pointer' /></Th>
+                                                    <Th>Name <ArrowUpDownIcon onClick={() => sortLogs('name')} className='cursor-pointer' /></Th>
+                                                    <Th>current_rank<ArrowUpDownIcon onClick={() => sortLogs('current_rank')} className='cursor-pointer' /></Th>
                                                     <Th>created_at <ArrowUpDownIcon onClick={() => sortLogs('created_at')} className='cursor-pointer' /></Th>
-                                                    {/* <Th >End Date <ArrowUpDownIcon onClick={() => sortLogs('updated_at')} className='cursor-pointer' /></Th> */}
+                                                    <Th>Goal<ArrowUpDownIcon onClick={() => sortLogs('goal')} className='cursor-pointer' /></Th>
+                                                    <Th>period<ArrowUpDownIcon onClick={() => sortLogs('period')} className='cursor-pointer' /></Th>
+                                                    <Th>price<ArrowUpDownIcon onClick={() => sortLogs('price')} className='cursor-pointer' /></Th>
+                                                    <Th>taskStartDate<ArrowUpDownIcon onClick={() => sortLogs('taskStartDate')} className='cursor-pointer' /></Th>
+                                                    <Th>taskEndDate<ArrowUpDownIcon onClick={() => sortLogs('taskEndDate')} className='cursor-pointer' /></Th>
+                                                    <Th>status<ArrowUpDownIcon onClick={() => sortLogs('status')} className='cursor-pointer' /></Th>
                                                 </Tr>
                                             </Thead>
                                             <Tbody>
-                                                {Array.isArray(currentLogs) && currentLogs.map((log, index) => (
+                                                {Array.isArray(currentLogs) && currentLogs.map((goal, index) => (
                                                     <Tr key={index}>
                                                         <Td>{startIndex + index + 1}</Td>
-                                                        <Td>{log.log_content}</Td>
-                                                        <Td>{log.user_id}</Td>
-                                                        <Td>{log.name}</Td>
-                                                        <Td>{log.current_rank}</Td>
-
-                                                        <Td>{log.created_at}</Td>
-                                                        {/* <Td>{log.updated_at}</Td> */}
+                                                        <Td>{goal.user_id}</Td>
+                                                        <Td>{goal.name}</Td>
+                                                        <Td>{goal.current_rank}</Td>
+                                                        <Td>{goal.created_at}</Td>
+                                                        <Td>{goal.goal}</Td>
+                                                        <Td>{goal.period}</Td>
+                                                        <Td>{goal.price === "NaN" ? "ไม่ได้ระบุ" : goal.price}</Td>
+                                                        <Td>{goal.date_start}</Td>
+                                                        <Td>{goal.date_end}</Td>
+                                                        <Td>{goal.status === "success" ? <Badge colorScheme="green">สำเร็จแล้ว</Badge> : <Badge colorScheme="red">ยังไม่สำเร็จ</Badge>}</Td>
                                                     </Tr>
                                                 ))}
                                             </Tbody>
@@ -317,11 +346,11 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
                             )}
                         </ModalBody>
                         <ModalFooter>
-                            <Box display="flex" justifyContent="center" alignItems="center" gap={5}>
-                                <Button variant="solid" sx={btnStypeExcel} onClick={exportToExcel}>
+                            <Box mt={4} display="flex" justifyContent="center" alignItems="center" gap={5}>
+                                <Button colorScheme='green' onClick={exportToExcel}>
                                     Export to Excel
                                 </Button>
-                                <Button variant="solid" sx={btnStype} mr={3} onClick={onClose}>
+                                <Button colorScheme='blue' mr={3} onClick={onClose}>
                                     Close
                                 </Button>
                             </Box>
@@ -333,4 +362,4 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
     );
 }
 
-export default TableRow;
+export default TableRowGoal;

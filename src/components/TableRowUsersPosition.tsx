@@ -12,21 +12,19 @@ import axios from 'axios';
 import Pagination from './Pagination';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import { btnStype,btnStypeExcel } from './css/stypeall'
+import { btnStype, btnStypeExcel } from './css/stypeall';
+
 interface TableRowProps {
     id: number;
     lablename: string;
-
 }
 
-const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
+const TableRowUsersPosition: React.FC<TableRowProps> = ({ id, lablename }) => {
     const [searchName, setSearchName] = useState<string>('');
     const [searchCurrentRank, setSearchCurrentRank] = useState<string>('');
-    const [searchPdpa, setSearchPdpa] = useState<string>('');
-    const [searchVdo, setSearchVdo] = useState<string>('');
+    const [account, setAccount] = useState<string>('');
     const [timeStart, setTimeStart] = useState<string>('');
     const [timeEnd, setTimeEnd] = useState<string>('');
-    const [userID, setUserID] = useState<string>('');
     const [users, setUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
@@ -35,7 +33,6 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
     const [sortConfig, setSortConfig] = useState<{ key: string, direction: string }>({ key: '', direction: '' });
     const { isOpen, onOpen, onClose } = useDisclosure();
     const [rankCounts, setRankCounts] = useState<{ [key: string]: number }>({});
-    console.log(searchPdpa);
 
     const fetchData = async () => {
         setLoading(true);
@@ -47,9 +44,7 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
                 params: {
                     name: searchName || undefined,
                     current_rank: searchCurrentRank || undefined,
-                    check_pdpa: searchPdpa || undefined,
-                    check_video_welcome_page: searchVdo || undefined,
-                    user_id: userID || undefined,
+                    account: account || undefined,
                     startDate: timeStart || undefined,
                     endDate: timeEnd || undefined,
                 },
@@ -79,34 +74,20 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
         }
     };
 
-    // useEffect(() => {
-    //     fetchData();
-    // }, [currentPage, searchName, searchCurrentRank, searchPdpa, timeStart, timeEnd, userID]);
     const handleBadgeClick = async (rank: string) => {
         setSearchCurrentRank(rank);
-        await fetchData()
+        await fetchData();
     };
+
     const exportToExcel = () => {
         const ws = XLSX.utils.json_to_sheet(
-            users.map((user, index) => {
-                const exportData: any = {
-                    No: startIndex + index + 1,
-                    userID: user.id,
-                    name: user.name,
-                    current_rank: user.current_rank,
-                    created_at: user.created_at,
-                };
-
-                if (lablename === 'หน้า PDPA') {
-                    exportData.PDPAStatus = user.check_pdpa === null ? "Not Checked" : "Checked";
-                }
-
-                if (lablename === 'หน้า VDO') {
-                    exportData.VdoStatus = user.check_video_welcome_page === null ? "Not Checked" : "Checked";
-                }
-
-                return exportData;
-            })
+            users.map((user, index) => ({
+                No: startIndex + index + 1,
+                account: user.account,
+                name: user.name,
+                current_rank: user.current_rank,
+                created_at: user.created_at,
+            }))
         );
 
         const wb = XLSX.utils.book_new();
@@ -129,7 +110,6 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
     const startIndex = (currentPage - 1) * itemsPerPage;
     const currentUsers = users.slice(startIndex, startIndex + itemsPerPage);
 
-
     const goToNextPage = () => {
         if (currentPage < totalPages) {
             setCurrentPage(currentPage + 1);
@@ -141,9 +121,11 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
             setCurrentPage(currentPage - 1);
         }
     };
+
     const goToPage = (page: number) => {
         setCurrentPage(page);
     };
+
     const sortUsers = (key: string) => {
         let direction = 'ascending';
         if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -162,7 +144,8 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
 
         setSortConfig({ key, direction });
         setUsers(sortedUsers);
-    };   
+    };
+
     return (
         <>
             <Tr>
@@ -170,9 +153,9 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
                 <Td>{lablename}</Td>
                 <Td>
                     <Input
-                        placeholder="กรุณาใส่ User ID (ถ้ามี)"
-                        value={userID}
-                        onChange={(e) => setUserID(e.target.value)}
+                        placeholder="กรุณาใส่ Account (ถ้ามี)"
+                        value={account}
+                        onChange={(e) => setAccount(e.target.value)}
                     />
                 </Td>
                 <Td>
@@ -198,28 +181,6 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
                         <option value="VP">VP</option>
                     </Select>
                 </Td>
-
-                {lablename === 'หน้า PDPA' && <Td>
-                    <Select
-                        placeholder="Select PDPA Status"
-                        value={searchPdpa}
-                        onChange={(e) => setSearchPdpa(e.target.value)}
-                    >
-                        <option value="Yes">Yes</option>
-                        <option value="NotChecked">Not Checked</option>
-                    </Select>
-                </Td>}
-                {lablename === 'หน้า VDO' &&
-                    <Td>
-                        <Select
-                            placeholder="Select Vdo Status"
-                            value={searchVdo}
-                            onChange={(e) => setSearchVdo(e.target.value)}
-                        >
-                            <option value="Yes">Yes</option>
-                            <option value="NotChecked">Not Checked</option>
-                        </Select>
-                    </Td>}
                 <Td>
                     <Input
                         placeholder='Select Start Date'
@@ -280,10 +241,8 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
                                             <Thead>
                                                 <Tr>
                                                     <Th>No.</Th>
-                                                    <Th>User id <ArrowUpDownIcon onClick={() => sortUsers('id')} /></Th>
+                                                    <Th>AGENCY code <ArrowUpDownIcon onClick={() => sortUsers('account')} /></Th>
                                                     <Th>Name <ArrowUpDownIcon onClick={() => sortUsers('name')} /></Th>
-                                                    {lablename === 'หน้า PDPA' && <Th>PDPA Status </Th>}
-                                                    {lablename === 'หน้า VDO' && <Th>Vdo Status </Th>}
                                                     <Th>Rank <ArrowUpDownIcon onClick={() => sortUsers('current_rank')} /></Th>
                                                     <Th>Created At <ArrowUpDownIcon onClick={() => sortUsers('created_at')} /></Th>
                                                 </Tr>
@@ -292,11 +251,9 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
                                                 {currentUsers.map((user, index) => (
                                                     <Tr key={user.id}>
                                                         <Td>{startIndex + index + 1}</Td>
-                                                        <Td>{user.id}</Td>
+                                                        <Td>{user.account}</Td>
                                                         <Td>{user.name}</Td>
-                                                        {lablename === 'หน้า PDPA' && <Td>{user.check_pdpa === null ? 'Not Checked' : "Checked"}</Td>}
-                                                        {lablename === 'หน้า VDO' && <Td>{user.check_video_welcome_page === null ? 'Not Checked' : "Checked"}</Td>}
-                                                        <Td>{user.current_rank || 'Unknown'}</Td>
+                                                        <Td>{user.current_rank || 'Staff'}</Td>
                                                         <Td>{user.created_at}</Td>
                                                     </Tr>
                                                 ))}
@@ -330,4 +287,4 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
     );
 };
 
-export default TableRowUsers;
+export default TableRowUsersPosition;

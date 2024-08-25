@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import {
     Accordion, AccordionItem, AccordionButton, AccordionPanel,
     AccordionIcon, Box, TableContainer, Table, Thead, Tr, Th,
-    Tbody, Td, ButtonGroup, Button
+    Tbody, Td
 } from '@chakra-ui/react';
 import axios from 'axios';
 import Pagination from './Pagination';
@@ -20,36 +20,42 @@ const LogVideoAccordionWithPagination: React.FC<LogVideoAccordionWithPaginationP
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 8;
     const [userNames, setUserNames] = useState<{ [key: string]: string }>({});
+    
     const totalPages = Math.ceil(Object.keys(logVideo).length / itemsPerPage);
+
 
     useEffect(() => {
         const fetchUserNames = async () => {
             const userIds = Object.keys(logVideo);
-            const userNameMap: { [key: string]: string } = {};
-
-            // Fetch user names for each userId
-            for (const userId of userIds) {
-                try {
-                    const response = await axios.get(`http://localhost:3000/users`, {
-                        params: { user_id: userId }
-                    });
-
-                    if (response.data.length > 0) {
-                        userNameMap[userId] = response.data[0].name;
-                    } else {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const paginatedUserIds = userIds.slice(startIndex, startIndex + itemsPerPage);
+            const userNameMap: { [key: string]: string } = { ...userNames };
+    
+            for (const userId of paginatedUserIds) {
+                if (!userNameMap[userId]) { 
+                    try {
+                        const response = await axios.get(`http://localhost:3000/users`, {
+                            params: { user_id: userId }
+                        });
+    
+                        if (response.data.length > 0) {
+                            userNameMap[userId] = response.data[0].name;
+                        } else {
+                            userNameMap[userId] = 'Unknown';
+                        }
+                    } catch (error) {
+                        console.error(`Error fetching name for user ${userId}:`, error);
                         userNameMap[userId] = 'Unknown';
                     }
-                } catch (error) {
-                    console.error(`Error fetching name for user ${userId}:`, error);
-                    userNameMap[userId] = 'Unknown';
                 }
             }
-
+    
             setUserNames(userNameMap);
         };
-
+    
         fetchUserNames();
-    }, [logVideo]);
+    }, [logVideo, currentPage]); 
+    
 
     const renderLogVideoAccordion = (logVideo: { [key: string]: { [key: string]: Log } }, currentPage: number, itemsPerPage: number) => {
         const items: JSX.Element[] = [];
@@ -77,7 +83,8 @@ const LogVideoAccordionWithPagination: React.FC<LogVideoAccordionWithPaginationP
                     <h2>
                         <AccordionButton>
                             <Box flex="1" textAlign="left">
-                                User ID: {userId} - Name: {userNames[userId] || 'Loading...'}
+                                {/* User ID: {userId} -  */}
+                                Name: {userNames[userId]}
                             </Box>
                             <AccordionIcon />
                         </AccordionButton>
