@@ -14,4 +14,7 @@ export default defineConfig({
       external: ['react-router-dom'],
     },
   },
+  server: {
+    port:3174,  // Use port 3001 for App 2
+  },
 });
