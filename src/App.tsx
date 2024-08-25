@@ -18,8 +18,7 @@ import TableRowExam from './components/TableRowEXAM'
 function App() {
   const Ones = [
     { id: 1, log_content: 'login_page', name_page: 'หน้า LOG-IN' },
-    // { id: 2, log_content: 'login_page', name_page: 'หน้า PDPA' },
-    // { id: 3, log_content: 'login_page', name_page: 'หน้า VDO' },
+
 
     { id: 2, log_content: 'logout_page', name_page: 'button - LOGOUT' },
 
@@ -69,43 +68,17 @@ function App() {
     { id: 2, log_content: 'SEVP_Journey', name_page: 'SEVP_Journey' }
   ];
 
-  const Training = [
 
-    { id: 11, log_content: 'login_page', name_page: 'หมวดหมู่หลักสูตร' },
-    { id: 12, log_content: 'login_page', name_page: 'หมวดหมู่หลักสูตร (overall)' },
-    { id: 13, log_content: 'login_page', name_page: 'ตารางอบรม' },
-    { id: 14, log_content: 'login_page', name_page: 'ตารางสอบ' },
-  ]
-  const product = [
 
-    { id: 15, log_content: 'login_page', name_page: 'หมวดหมูของ Product' },
-    { id: 16, log_content: 'login_page', name_page: 'หมวดหมูของ Product (overall)' },
-  ]
-  const news = [
-
-    { id: 17, log_content: 'login_page', name_page: 'หมวดหมู่ข่าว,ตารางกิจกรรม/กิจกรรม' },
-
-  ]
   const Tools = [
-    { id: 18, log_content: 'login_page', name_page: 'หมวดหมู่ Tools' },
-    { id: 19, log_content: 'login_page', name_page: 'หมวดหมู่ข้อมูลบริษัท' },
-    { id: 20, log_content: 'login_page', name_page: 'หมวดหมู่ติดต่อ' },
-    { id: 21, log_content: 'login_page', name_page: 'หมวดหมู่ COC' },
-    { id: 22, log_content: 'login_page', name_page: 'หมวดหมู่ Tutorials' },
+    { id: 1, log_content: 'Tools_button', name_page: 'หมวดหมู่ Tools' },
+    { id: 2, log_content: 'ข้อมูลบริษัท_button', name_page: 'หมวดหมู่ข้อมูลบริษัท' },
+    { id: 3, log_content: 'ติดต่อ_button', name_page: 'หมวดหมู่ติดต่อ' },
+    { id: 4, log_content: 'COC_button', name_page: 'หมวดหมู่ COC' },
+    { id: 5, log_content: 'Tutorials_button', name_page: 'หมวดหมู่ Tutorials' },
 
   ]
-  const member = [
-    { id: 23, log_content: 'login_page', name_page: 'ช่องเสิร์จชื่อ / เลข account  Member ' },
-    { id: 24, log_content: 'login_page', name_page: 'New User ที่ไม่เคย log in มาก่อน  Member ' },
 
-  ]
-  const admin = [
-    { id: 25, log_content: 'login_page', name_page: 'ช่องเสิร์จชื่อ / เลข account Staff / Admin' },
-
-  ]
-  const like = [
-    { id: 26, log_content: 'login_page', name_page: ' LIKE / DISLIKE / SHARE / FAV เลือกหัวข้อ' },
-  ]
 
   const [selectedLogContent, setSelectedLogContent] = useState(HOME[0].log_content);
 
@@ -165,13 +138,13 @@ function App() {
             flex="1"
             textAlign="center"
           >Tools</Tab>
-          <Tab
+          {/* <Tab
             _selected={selectedTabStyle}
             _hover={hoverTabStyle}
             {...normalTabStyle}
             flex="1"
             textAlign="center"
-          >User</Tab>
+          >User</Tab> */}
         </TabList>
         <TabPanels w="100%">
           <TabPanel>
@@ -284,19 +257,30 @@ function App() {
             <TableContainer>
               <Table variant='simple'>
                 <Thead>
+                  <Tr className='bg-slate-400 rounded-lg'>
+                    <Td colSpan={9} className='border border-gray-500 bg-slate-400 rounded-lg  py-2'>
+                      <Text className='text-white font-semibold text-center'>Training</Text>
+                    </Td>
+
+                  </Tr>
+                  <TableRowTraining id={1} name_page="training" />
+                  <Tr className='bg-slate-400 rounded-lg'>
+                    <Td colSpan={9} className='border border-gray-500 bg-slate-400 rounded-lg  py-2'>
+                      <Text className='text-white font-semibold text-center'>|</Text>
+                    </Td>
+
+                  </Tr>
                   <Tr>
                     <Th>No.</Th>
                     <Th>log_content </Th>
-                    <Th>userID</Th>
+                    <Th>TITLE</Th>
                     <Th>Name</Th>
-                    <Th>current_rank</Th>
-                    <Th>PDPA Status/Vdo Status</Th>
-                    <Th>Start Date</Th>
-                    <Th>End Date</Th>
+                    <Th>DATE START</Th>
+                    <Th>DATE END</Th>
                     <Th>Active</Th>
                   </Tr>
                 </Thead>
-                <TableRowTraining id={1} name_page="training" />
+
                 <TableRowExam id={2} type='สอบ' name_page='ตารางสอบ' />
                 <TableRowExam id={2} type='อบรม' name_page='ตารางอบรม' />
               </Table>
@@ -326,7 +310,7 @@ function App() {
                     <Th>No.</Th>
                     <Th>log_content </Th>
                     <Th>หัวข้อ</Th>
-                   
+
                     <Th>Active</Th>
                   </Tr>
                 </Thead>
@@ -351,12 +335,17 @@ function App() {
                     <Th>Active</Th>
                   </Tr>
                 </Thead>
-                <TableRowGoal id={1} name_page="My Goal" />
-                <TableRowUsers id={4} lablename='หน้า VDO' />
+                {Tools.map(one => (
+                  <TableRow
+                    key={one.id}
+                    id={one.id}
+                    log_content={one.log_content}
+                    name_page={one.name_page} />
+                ))}
               </Table>
             </TableContainer>
           </TabPanel>
-          <TabPanel>
+          {/* <TabPanel>
             <TableContainer>
               <Table variant='simple'>
                 <Thead>
@@ -376,7 +365,7 @@ function App() {
                 <TableRowUsers id={4} lablename='หน้า VDO' />
               </Table>
             </TableContainer>
-          </TabPanel>
+          </TabPanel> */}
         </TabPanels>
       </Tabs>
 

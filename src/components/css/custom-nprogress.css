@@ -1,0 +1,21 @@
+/* nprogress custom style */
+#nprogress .bar {
+    background: #243286 !important; /* Change to your desired color */
+    z-index: 2000 !important; /* Increase z-index to be above the modal */
+  }
+  
+  #nprogress .peg {
+    box-shadow: 0 0 10px #243286, 0 0 5px #243286 !important;
+    z-index: 2000 !important;
+  }
+  
+  #nprogress .spinner-icon {
+    border-top-color: #243286 !important;
+    border-left-color: #243286 !important;
+    z-index: 2000 !important;
+  }
+  
+  #nprogress .spinner {
+    z-index: 2000 !important;
+  }
+  

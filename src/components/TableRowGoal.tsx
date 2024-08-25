@@ -24,6 +24,9 @@ import axios from 'axios';
 import './css/TableRow.css';
 import Pagination from './Pagination';
 import {btnStype} from './css/stypeall'
+import NProgress from 'nprogress';
+import '../components/css/custom-nprogress.css'
+import 'nprogress/nprogress.css';
 interface TableRowProps {
     id: number;
 
@@ -56,6 +59,7 @@ const TableRowGoal: React.FC<TableRowProps> = ({ id, name_page }) => {
     console.log(mygoal);
 
     const handleSearch = async () => {
+        NProgress.start();  // เริ่มการแสดง nprogress
         setLoading(true);
         setError(null);
         setMyGoal([]);
@@ -121,6 +125,7 @@ const TableRowGoal: React.FC<TableRowProps> = ({ id, name_page }) => {
             setError('Error fetching logs');
         } finally {
             setLoading(false);
+            NProgress.done();  // สิ้นสุดการแสดง nprogress
             onOpen();
         }
     };
@@ -165,6 +170,7 @@ const TableRowGoal: React.FC<TableRowProps> = ({ id, name_page }) => {
     };
 
     const exportToExcel = () => {
+        NProgress.start();  // เริ่มการแสดง nprogress
         const ws = XLSX.utils.json_to_sheet(mygoal.map((goal, index) => ({
             No: startIndex + index + 1,
             userID: goal.user_id,
@@ -186,6 +192,7 @@ const TableRowGoal: React.FC<TableRowProps> = ({ id, name_page }) => {
         const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
         const data = new Blob([excelBuffer], { type: "application/octet-stream" });
         saveAs(data, "mygoal.xlsx");
+        NProgress.done();  
     };
 
     const sortLogs = (key: string) => {
@@ -258,7 +265,7 @@ const TableRowGoal: React.FC<TableRowProps> = ({ id, name_page }) => {
             </Tr>
 
             <Box>
-                <Modal isOpen={isOpen} onClose={onClose} size={'6xl'}>
+                <Modal isOpen={isOpen} onClose={onClose} size={'full'}>
                     <ModalOverlay />
                     <ModalContent className="custom-modal-content">
                         <ModalHeader>Search Results</ModalHeader>

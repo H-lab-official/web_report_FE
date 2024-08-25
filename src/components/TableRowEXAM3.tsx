@@ -17,25 +17,55 @@ import 'nprogress/nprogress.css';
 
 interface TableRowProps {
     id: number;
+    type: string;
     name_page: string;
 }
 
-const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
+const TableRowExam: React.FC<TableRowProps> = ({ id, type,name_page }) => {
     const [title, setTitle] = useState<string>('');
-    const [products, setProducts] = useState<any[]>([]);
+    const [dateStart, setDateStart] = useState<string>('');
+    const [dateEnd, setDateEnd] = useState<string>('');
+    const [timeStart, setTimeStart] = useState<string>('');
+    const [timeEnd, setTimeEnd] = useState<string>('');
+    const [userID, setUserID] = useState<string>('');
+    const [name, setName] = useState<string>('');
+
+    // State variables for the additional parameters
+    const [userLike, setUserLike] = useState<string>('');
+    const [userDislike, setUserDislike] = useState<string>('');
+    const [userShare, setUserShare] = useState<string>('');
+    const [userFav, setUserFav] = useState<string>('');
+    const [userView, setUserView] = useState<string>('');
+    const [logRating, setLogRating] = useState<string>('');
+    const [locationDetail, setLocationDetail] = useState<string>('');
+    const [linkMap, setLinkMap] = useState<string>('');
+    const [linkOut, setLinkOut] = useState<string>('');
+
+    const [logs, setLogs] = useState<any[]>([]);
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
+
     const [currentPage, setCurrentPage] = useState<number>(1);
-    const itemsPerPage = 8;
-    const [selectedLikes, setSelectedLikes] = useState<string[]>([]);
-    const [likedUsers, setLikedUsers] = useState<{ [key: string]: string }>({});
+    const itemsPerPage = 10;
+
+    const [sortConfig, setSortConfig] = useState<{ key: string, direction: string }>({ key: '', direction: '' });
+
     const { isOpen, onOpen, onClose } = useDisclosure();
+
+    // State to manage selected items for modals
+    const [selectedLikes, setSelectedLikes] = useState<string[]>([]);
+    const [selectedDislikes, setSelectedDislikes] = useState<string[]>([]);
     const [selectedShares, setSelectedShares] = useState<{ [key: string]: any }>({});
-    const [sharedUsers, setSharedUsers] = useState<{ [key: string]: string }>({});
     const [selectedFavs, setSelectedFavs] = useState<{ [key: string]: any }>({});
-    const [favUsers, setFavUsers] = useState<{ [key: string]: string }>({});
     const [selectedViews, setSelectedViews] = useState<any[]>([]);
     const [viewModalOpen, setViewModalOpen] = useState<boolean>(false);
+
+    // State for user data mapping
+    const [likedUsers, setLikedUsers] = useState<{ [key: string]: string }>({});
+    const [dislikedUsers, setDislikedUsers] = useState<{ [key: string]: string }>({});
+    const [sharedUsers, setSharedUsers] = useState<{ [key: string]: string }>({});
+    const [favUsers, setFavUsers] = useState<{ [key: string]: string }>({});
+;
 
 
     useEffect(() => {
@@ -52,30 +82,72 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
             fetchLikedUsers(selectedViews.map(view => view.userId));
         }
     }, [selectedLikes, selectedFavs, selectedShares, selectedViews]);
+    const formatDate = (dateString: string) => {
+        const options: Intl.DateTimeFormatOptions = { day: '2-digit', month: '2-digit', year: 'numeric' };
+        return new Date(dateString).toLocaleDateString('th-TH', options);
+    };
 
+    const formatTime = (timeString: string) => {
+        if (!timeString) return '';
+        const timeParts = timeString.split(':');
+        if (timeParts.length !== 2) return '';
+        const hours = parseInt(timeParts[0], 10);
+        const minutes = timeParts[1];
+        const formattedTime = `${hours.toString().padStart(2, '0')}.${minutes} น.`;
+        return formattedTime;
+    };
     const handleSearch = async () => {
         NProgress.start();
         setLoading(true);
         setError(null);
-        setProducts([]);
+        setLogs([]);
 
         try {
-            const response = await axios.get('http://localhost:3000/products', {
-                params: { title: title || undefined },
+            const response = await axios.get('http://localhost:3000/appointments', {
+                params: {
+                    type,
+                    title: title || undefined,
+                    date_start: dateStart || undefined,
+                    date_end: dateEnd || undefined,
+                    time_start: timeStart || undefined,
+                    time_end: timeEnd || undefined,
+                    user_id: userID || undefined,
+                    name: name || undefined,
+                    user_like: userLike || undefined,
+                    user_dislike: userDislike || undefined,
+                    user_share: userShare || undefined,
+                    user_fav: userFav || undefined,
+                    user_view: userView || undefined,
+                    log_rating: logRating || undefined,
+                    location_detail: locationDetail || undefined,
+                    link_map: linkMap || undefined,
+                    link_out: linkOut || undefined,
+                },
             });
 
-            const formattedProducts = response.data.map((product: any) => ({
-                ...product,
-                created_at: new Date(product.created_at).toLocaleString('th-TH', {
+            const formattedLogs = response.data.map((log: any) => ({
+                ...log,
+                created_at: new Date(log.created_at).toLocaleString('th-TH', {
                     day: '2-digit',
                     month: '2-digit',
                     year: 'numeric',
                     hour: '2-digit',
                     minute: '2-digit',
                 }),
+                updated_at: new Date(log.updated_at).toLocaleString('th-TH', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                }),
+                date_start: formatDate(log.date_start),
+                date_end: formatDate(log.date_end),
+                time_start: formatTime(log.time_start),
+                time_end: formatTime(log.time_end),
             }));
 
-            setProducts(Array.isArray(formattedProducts) ? formattedProducts : []);
+            setLogs(Array.isArray(formattedLogs) ? formattedLogs : []);
         } catch (err) {
             setError('Error fetching products data');
         } finally {
@@ -119,6 +191,11 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
     };
 
     const handleShowShares = async (shares: any) => {
+        if (!shares || Object.keys(shares).length === 0) {
+            console.warn('No shares available to display.');
+            return;
+        }
+    
         NProgress.start();
         try {
             await fetchLikedUsers(Object.keys(shares));
@@ -127,7 +204,6 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
             NProgress.done();
         }
     };
-
     const handleShowFavs = async (favs: any) => {
         NProgress.start();
         try {
@@ -207,9 +283,9 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
     };
 
 
-    const totalPages = Math.ceil(products.length / itemsPerPage);
+    const totalPages = Math.ceil(logs.length / itemsPerPage);
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentProducts = products.slice(startIndex, startIndex + itemsPerPage);
+    const currentProducts = logs.slice(startIndex, startIndex + itemsPerPage);
 
     const goToNextPage = () => {
         if (currentPage < totalPages) {
@@ -258,7 +334,7 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
         }
     };
     const fetchAllDataForExport = async () => {
-        const allLikes = products.flatMap((product, index) => 
+        const allLikes = logs.flatMap((product, index) => 
             (JSON.parse(product.user_like) || []).map(userId => ({
                 productNo: index + 1,
                 productTitle: product.title,
@@ -266,7 +342,7 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
             }))
         );
     
-        const allShares = products.flatMap((product, index) => 
+        const allShares = logs.flatMap((product, index) => 
             Object.entries(JSON.parse(product.user_share) || {}).flatMap(([userId, shares]) =>
                 Object.entries(shares).map(([, shareData]) => ({
                     productNo: index + 1,
@@ -277,7 +353,7 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
             )
         );
     
-        const allFavs = products.flatMap((product, index) => 
+        const allFavs = logs.flatMap((product, index) => 
             Object.entries(JSON.parse(product.user_fav) || {}).flatMap(([userId, favs]) =>
                 Object.entries(favs).map(([, favData]) => ({
                     productNo: index + 1,
@@ -288,7 +364,7 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
             )
         );
     
-        const allViews = products.flatMap((product, index) => {
+        const allViews = logs.flatMap((product, index) => {
             const views = JSON.parse(product.user_view) || {};
             return Object.entries(views).map(([userId, viewData]) => ({
                 productNo: index + 1,
@@ -335,7 +411,7 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
             const allData = await fetchAllDataForExport();
 
             // Create sheets
-            const wsProducts = XLSX.utils.json_to_sheet(products.map((product, index) => {
+            const wsProducts = XLSX.utils.json_to_sheet(logs.map((product, index) => {
                 const { activeCount, canceledCount } = filterFavChanges(JSON.parse(product.user_fav));
                 const { countBySocial } = countShares(JSON.parse(product.user_share));
 
@@ -410,7 +486,7 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
                                     <AlertIcon />
                                     {error}
                                 </Alert>
-                            ) : products.length === 0 ? (
+                            ) : logs.length === 0 ? (
                                 <Box textAlign="center" mt={4}>
                                     <Text>No data found</Text>
                                 </Box>
@@ -716,4 +792,4 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
     );
 };
 
-export default TableRowProducts;
+export default TableRowExam;

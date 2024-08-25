@@ -14,6 +14,9 @@ import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import { btnStype, btnStypeExcel } from './css/stypeall';
 
+import NProgress from 'nprogress';
+import '../components/css/custom-nprogress.css'
+import 'nprogress/nprogress.css';
 interface TableRowProps {
     id: number;
     lablename: string;
@@ -35,6 +38,7 @@ const TableRowUsersPosition: React.FC<TableRowProps> = ({ id, lablename }) => {
     const [rankCounts, setRankCounts] = useState<{ [key: string]: number }>({});
 
     const fetchData = async () => {
+        NProgress.start();
         setLoading(true);
         setError(null);
         setUsers([]);
@@ -70,6 +74,7 @@ const TableRowUsersPosition: React.FC<TableRowProps> = ({ id, lablename }) => {
             setError('Error fetching user data');
         } finally {
             setLoading(false);
+            NProgress.done();
             onOpen();
         }
     };
@@ -80,6 +85,7 @@ const TableRowUsersPosition: React.FC<TableRowProps> = ({ id, lablename }) => {
     };
 
     const exportToExcel = () => {
+        NProgress.start();
         const ws = XLSX.utils.json_to_sheet(
             users.map((user, index) => ({
                 No: startIndex + index + 1,
@@ -95,6 +101,7 @@ const TableRowUsersPosition: React.FC<TableRowProps> = ({ id, lablename }) => {
         const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
         const data = new Blob([excelBuffer], { type: "application/octet-stream" });
         saveAs(data, "Users.xlsx");
+        NProgress.done();
     };
 
     const countRanks = (users: any[]) => {
@@ -205,7 +212,7 @@ const TableRowUsersPosition: React.FC<TableRowProps> = ({ id, lablename }) => {
             </Tr>
 
             <Box>
-                <Modal isOpen={isOpen} onClose={onClose} size={'6xl'}>
+                <Modal isOpen={isOpen} onClose={onClose} size={'full'}>
                     <ModalOverlay />
                     <ModalContent>
                         <ModalHeader>Search Results</ModalHeader>

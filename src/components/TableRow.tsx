@@ -24,6 +24,9 @@ import axios from 'axios';
 import './css/TableRow.css';
 import Pagination from './Pagination';
 import { btnStype, btnStypeExcel } from './css/stypeall'
+import NProgress from 'nprogress';
+import '../components/css/custom-nprogress.css'
+import 'nprogress/nprogress.css';
 interface TableRowProps {
     id: number;
     log_content: string;
@@ -50,6 +53,7 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
     const [rankCounts, setRankCounts] = useState<{ [key: string]: number }>({});
 
     const handleSearch = async () => {
+        NProgress.start();  // เริ่มการแสดง nprogress
         setLoading(true);
         setError(null);
         setLogs([]);
@@ -65,8 +69,6 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
                     current_rank: current_rank || undefined,
                 },
             });
-
-
 
             const formattedLogs = response.data.map((log: any) => ({
                 ...log,
@@ -96,9 +98,11 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
             setError('Error fetching logs');
         } finally {
             setLoading(false);
+            NProgress.done();  // สิ้นสุดการแสดง nprogress
             onOpen();
         }
     };
+
     const handleBadgeClick = async (rank: any) => {
         setCurrentRank(rank);
         await handleSearch();
@@ -140,6 +144,8 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
     };
 
     const exportToExcel = () => {
+        NProgress.start();  // เริ่มการแสดง nprogress
+
         const ws = XLSX.utils.json_to_sheet(logs.map((log, index) => ({
             No: startIndex + index + 1,
             log_content: log.log_content,
@@ -153,8 +159,12 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
         XLSX.utils.book_append_sheet(wb, ws, "Logs");
         const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
         const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(data, "logs.xlsx");
+        const logContentForFileName = log_content ? log_content.replace(/[^a-zA-Z0-9]/g, '_') : 'logs';
+        saveAs(data, `${logContentForFileName}.xlsx`);
+
+        NProgress.done();  // สิ้นสุดการแสดง nprogress
     };
+
 
     const sortLogs = (key: string) => {
         let direction = 'ascending';

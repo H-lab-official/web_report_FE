@@ -12,7 +12,11 @@ import axios from 'axios';
 import Pagination from './Pagination';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-import { btnStype,btnStypeExcel } from './css/stypeall'
+import { btnStype, btnStypeExcel } from './css/stypeall'
+
+import NProgress from 'nprogress';
+import '../components/css/custom-nprogress.css'
+import 'nprogress/nprogress.css';
 interface TableRowProps {
     id: number;
     lablename: string;
@@ -38,6 +42,7 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
     console.log(searchPdpa);
 
     const fetchData = async () => {
+        NProgress.start();  // เริ่มการแสดง nprogress
         setLoading(true);
         setError(null);
         setUsers([]);
@@ -75,6 +80,7 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
             setError('Error fetching user data');
         } finally {
             setLoading(false);
+            NProgress.done();  // สิ้นสุดการแสดง nprogress
             onOpen();
         }
     };
@@ -87,6 +93,7 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
         await fetchData()
     };
     const exportToExcel = () => {
+        NProgress.start();  // เริ่มการแสดง nprogress
         const ws = XLSX.utils.json_to_sheet(
             users.map((user, index) => {
                 const exportData: any = {
@@ -113,7 +120,9 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
         XLSX.utils.book_append_sheet(wb, ws, "Users");
         const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
         const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(data, "Users.xlsx");
+        const logContentForFileName = lablename ? lablename.replace(/[^a-zA-Z0-9]/g, '_') : 'logs';
+        saveAs(data, `${logContentForFileName}.xlsx`);
+        NProgress.done();  // สิ้นสุดการแสดง nprogress
     };
 
     const countRanks = (users: any[]) => {
@@ -162,7 +171,7 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
 
         setSortConfig({ key, direction });
         setUsers(sortedUsers);
-    };   
+    };
     return (
         <>
             <Tr>
@@ -244,7 +253,7 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
             </Tr>
 
             <Box>
-                <Modal isOpen={isOpen} onClose={onClose} size={'6xl'}>
+                <Modal isOpen={isOpen} onClose={onClose} size={'full'}>
                     <ModalOverlay />
                     <ModalContent>
                         <ModalHeader>Search Results</ModalHeader>

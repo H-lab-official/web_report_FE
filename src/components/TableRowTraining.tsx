@@ -5,13 +5,15 @@ import {
     useDisclosure, Table, Thead, Tbody, Th, TableContainer,
     Spinner, Alert, AlertIcon, Box, Text, Badge
 } from '@chakra-ui/react';
-import { ArrowUpDownIcon } from '@chakra-ui/icons';
+import PaginationView from './PaginationView';
 import axios from 'axios';
 import Pagination from './Pagination';
 import { btnStype } from './css/stypeall';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
-
+import NProgress from 'nprogress';
+import '../components/css/custom-nprogress.css'
+import 'nprogress/nprogress.css';
 interface TableRowProps {
     id: number;
     name_page: string;
@@ -23,7 +25,7 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
     const [loading, setLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [currentPage, setCurrentPage] = useState<number>(1);
-    const itemsPerPage = 5;
+    const itemsPerPage = 8;
     const [selectedLikes, setSelectedLikes] = useState<string[]>([]);
     const [likedUsers, setLikedUsers] = useState<{ [key: string]: string }>({});
     const { isOpen, onOpen, onClose } = useDisclosure();
@@ -50,6 +52,7 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
     }, [selectedLikes, selectedFavs, selectedShares, selectedViews]);
 
     const handleSearch = async () => {
+        NProgress.start();
         setLoading(true);
         setError(null);
         setTrainings([]);
@@ -79,6 +82,7 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
             setError('Error fetching training data');
         } finally {
             setLoading(false);
+            NProgress.done();
             onOpen();
         }
     };
@@ -106,18 +110,34 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
             console.error('Error fetching liked users:', error);
         }
     };
-
-    const handleShowLikes = (likes: string[]) => {
-        console.log('Populating selectedLikes with:', likes);
-        setSelectedLikes(likes);
+    const handleShowLikes = async (likes: string[]) => {
+        NProgress.start(); // Start the loading bar
+        try {
+            await fetchLikedUsers(likes);
+            setSelectedLikes(likes);
+        } finally {
+            NProgress.done(); // Complete the loading bar
+        }
     };
 
-    const handleShowShares = (shares: any) => {
-        setSelectedShares(shares);
+    const handleShowShares = async (shares: any) => {
+        NProgress.start();
+        try {
+            await fetchLikedUsers(Object.keys(shares));
+            setSelectedShares(shares);
+        } finally {
+            NProgress.done();
+        }
     };
 
-    const handleShowFavs = (favs: any) => {
-        setSelectedFavs(favs);
+    const handleShowFavs = async (favs: any) => {
+        NProgress.start();
+        try {
+            await fetchLikedUsers(Object.keys(favs));
+            setSelectedFavs(favs);
+        } finally {
+            NProgress.done();
+        }
     };
 
     const countShares = (shares: any) => {
@@ -204,98 +224,159 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
     const goToPage = (page: number) => {
         setCurrentPage(page);
     };
+    const fetchUserDetailsForExport = async (userIds: string[]): Promise<{ [key: string]: string }> => {
+        try {
+            const chunks = [];
+            const chunkSize = 50;
+            for (let i = 0; i < userIds.length; i += chunkSize) {
+                chunks.push(userIds.slice(i, i + chunkSize));
+            }
 
-    const exportToExcel = () => {
-        // Step 1: Create the main Trainings sheet
-        const trainingData = trainings.map((training, index) => {
-            const { activeCount, canceledCount } = filterFavChanges(JSON.parse(training.user_fav));
-            const { countBySocial } = countShares(JSON.parse(training.user_share));
-    
-            return {
-                No: startIndex + index + 1,
-                Title: training.title,
-                Created_At: training.created_at,
-                User_Like_Count: training.user_like ? JSON.parse(training.user_like).length : 0,
-                User_Share_Line: countBySocial.line || 0,
-                User_Share_Facebook: countBySocial.facebook || 0,
-                User_Share_Copy: countBySocial.copy || 0,
-                User_Share_Twitter: countBySocial.twitter || 0,
-                User_Share_WhatsApp: countBySocial.whatsapp || 0,
-                User_Fav_Changes: `Active: ${activeCount}, Canceled: ${canceledCount}`,
-                User_View: Object.keys(JSON.parse(training.user_view)).length,
-            };
-        });
-    
-        const wsTrainings = XLSX.utils.json_to_sheet(trainingData);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, wsTrainings, "Trainings");
-    
-        // Step 2: Create the Likes sheet
-        if (selectedLikes.length > 0) {
-            const likesData = selectedLikes.map((userId, index) => ({
-                No: index + 1,
-                UserID: userId,
-                UserName: likedUsers[userId] || 'Unknown',
-            }));
-            const wsLikes = XLSX.utils.json_to_sheet(likesData);
-            XLSX.utils.book_append_sheet(wb, wsLikes, "Likes");
-        }
-    
-        // Step 3: Create the Shares sheet
-        if (Object.keys(selectedShares).length > 0) {
-            const sharesData: Array<{ No: number, UserID: string, UserName: string, Social: string, Time: string }> = [];
-            Object.keys(selectedShares).forEach((userId) => {
-                Object.entries(selectedShares[userId]).forEach(([shareId, shareData]: [string, any]) => {
-                    sharesData.push({
-                        No: sharesData.length + 1,
-                        UserID: userId,
-                        UserName: sharedUsers[userId] || 'Unknown',
-                        Social: shareData.social,
-                        Time: shareData.datetime,
-                    });
+            const userMap: { [key: string]: string } = {};
+
+            for (const chunk of chunks) {
+                const responses = await Promise.all(
+                    chunk.map(userId =>
+                        axios.get(`http://localhost:3000/users`, { params: { user_id: userId } })
+                    )
+                );
+
+                responses.forEach((response) => {
+                    if (response.data.length > 0) {
+                        const user = response.data[0];
+                        userMap[user.id] = user.name;
+                    }
                 });
-            });
-            const wsShares = XLSX.utils.json_to_sheet(sharesData);
-            XLSX.utils.book_append_sheet(wb, wsShares, "Shares");
+            }
+
+            return userMap;
+        } catch (error) {
+            console.error('Error fetching user details:', error);
+            return {};
         }
-    
-        // Step 4: Create the Favorites sheet
-        if (Object.keys(selectedFavs).length > 0) {
-            const favsData: Array<{ No: number, UserID: string, UserName: string, Status: string, DateTime: string }> = [];
-            Object.keys(selectedFavs).forEach((userId) => {
-                Object.entries(selectedFavs[userId]).forEach(([favId, favData]: [string, any]) => {
-                    favsData.push({
-                        No: favsData.length + 1,
-                        UserID: userId,
-                        UserName: favUsers[userId] || 'Unknown',
-                        Status: favData.status,
-                        DateTime: favData.datetime,
-                    });
-                });
-            });
-            const wsFavs = XLSX.utils.json_to_sheet(favsData);
-            XLSX.utils.book_append_sheet(wb, wsFavs, "Favorites");
-        }
-    
-        // Step 5: Create the Views sheet
-        if (selectedViews.length > 0) {
-            const viewsData = selectedViews.map((view, index) => ({
-                No: index + 1,
-                UserID: view.userId,
-                UserName: view.userName,
-                ViewCount: view.viewCount,
-                LastView: view.lastView,
-            }));
-            const wsViews = XLSX.utils.json_to_sheet(viewsData);
-            XLSX.utils.book_append_sheet(wb, wsViews, "Views");
-        }
-    
-        // Step 6: Export the workbook
-        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(data, "trainings_with_likes_shares_favs_views.xlsx");
     };
-    
+    const fetchAllDataForExport = async () => {
+        const allLikes = trainings.flatMap((product, index) =>
+            (JSON.parse(product.user_like) || []).map(userId => ({
+                productNo: index + 1,
+                productTitle: product.title,
+                userId
+            }))
+        );
+
+        const allShares = trainings.flatMap((product, index) =>
+            Object.entries(JSON.parse(product.user_share) || {}).flatMap(([userId, shares]) =>
+                Object.entries(shares).map(([, shareData]) => ({
+                    productNo: index + 1,
+                    productTitle: product.title,
+                    userId,
+                    ...shareData
+                }))
+            )
+        );
+
+        const allFavs = trainings.flatMap((product, index) =>
+            Object.entries(JSON.parse(product.user_fav) || {}).flatMap(([userId, favs]) =>
+                Object.entries(favs).map(([, favData]) => ({
+                    productNo: index + 1,
+                    productTitle: product.title,
+                    userId,
+                    ...favData
+                }))
+            )
+        );
+
+        const allViews = trainings.flatMap((product, index) => {
+            const views = JSON.parse(product.user_view) || {};
+            return Object.entries(views).map(([userId, viewData]) => ({
+                productNo: index + 1,
+                productTitle: product.title,
+                userId,
+                viewCount: Object.keys(viewData).length,
+                lastView: viewData[Object.keys(viewData).pop()].datetime,
+            }));
+        });
+
+        const allUserIds = new Set([
+            ...allLikes.map(like => like.userId),
+            ...allShares.map(share => share.userId),
+            ...allFavs.map(fav => fav.userId),
+            ...allViews.map(view => view.userId)
+        ]);
+
+        const userDetailsMap = await fetchUserDetailsForExport(Array.from(allUserIds));
+
+        return {
+            likes: allLikes.map(like => ({
+                ...like,
+                userName: userDetailsMap[like.userId] || 'Unknown'
+            })),
+            shares: allShares.map(share => ({
+                ...share,
+                userName: userDetailsMap[share.userId] || 'Unknown'
+            })),
+            favs: allFavs.map(fav => ({
+                ...fav,
+                userName: userDetailsMap[fav.userId] || 'Unknown'
+            })),
+            views: allViews.map(view => ({
+                ...view,
+                userName: userDetailsMap[view.userId] || 'Unknown'
+            }))
+        };
+    };
+
+    const exportToExcel = async () => {
+        NProgress.start();
+
+        try {
+            const allData = await fetchAllDataForExport();
+
+            // Create sheets
+            const wsTrainings = XLSX.utils.json_to_sheet(trainings.map((training, index) => {
+                const { activeCount, canceledCount } = filterFavChanges(JSON.parse(training.user_fav));
+                const { countBySocial } = countShares(JSON.parse(training.user_share));
+
+                return {
+                    No: startIndex + index + 1,
+                    Title: training.title,
+                    Created_At: training.created_at,
+                    User_Like_Count: training.user_like ? JSON.parse(training.user_like).length : 0,
+                    User_Share_Line: countBySocial.line || 0,
+                    User_Share_Facebook: countBySocial.facebook || 0,
+                    User_Share_Copy: countBySocial.copy || 0,
+                    User_Share_Twitter: countBySocial.twitter || 0,
+                    User_Share_WhatsApp: countBySocial.whatsapp || 0,
+                    User_Fav_Changes: `Active: ${activeCount}, Canceled: ${canceledCount}`,
+                    User_View: Object.keys(JSON.parse(training.user_view)).length,
+                };
+            }));
+
+            const wsUserLikes = XLSX.utils.json_to_sheet(allData.likes);
+            const wsUserShares = XLSX.utils.json_to_sheet(allData.shares);
+            const wsUserFavs = XLSX.utils.json_to_sheet(allData.favs);
+            const wsUserViews = XLSX.utils.json_to_sheet(allData.views);
+
+            // Create workbook and append sheets
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, wsTrainings, "Products");
+            XLSX.utils.book_append_sheet(wb, wsUserLikes, "User Likes");
+            XLSX.utils.book_append_sheet(wb, wsUserShares, "User Shares");
+            XLSX.utils.book_append_sheet(wb, wsUserFavs, "User Favs");
+            XLSX.utils.book_append_sheet(wb, wsUserViews, "User Views");
+
+            // Write the workbook and trigger download
+            const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+            const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+            saveAs(data, "Trainings_export.xlsx");
+        } catch (error) {
+            console.error('Error exporting to Excel:', error);
+        } finally {
+            NProgress.done();
+        }
+    };
+
+
 
     return (
         <>
@@ -317,7 +398,7 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
             </Tr>
 
             <Box>
-                <Modal isOpen={isOpen} onClose={onClose} size={'6xl'}>
+                <Modal isOpen={isOpen} onClose={onClose} size={'full'}>
                     <ModalOverlay />
                     <ModalContent>
                         <ModalHeader>Search Results</ModalHeader>
@@ -360,7 +441,12 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
                                                     return (
                                                         <Tr key={index}>
                                                             <Td>{startIndex + index + 1}</Td>
-                                                            <Td>{training.title}</Td>
+
+                                                            <Td className="max-w-[320px] p-2 ">
+                                                                <p className="whitespace-pre-line break-words">
+                                                                    {training.title}
+                                                                </p>
+                                                            </Td>
                                                             <Td>{training.created_at}</Td>
                                                             <Td>
                                                                 <Badge
@@ -372,36 +458,39 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
                                                                 </Badge>
                                                             </Td>
                                                             <Td>
-                                                                <Box className='flex flex-row items-center justify-start gap-1'>
-                                                                    <Text>แชร์ทั้งหมด</Text>
-                                                                    <Badge
-                                                                        colorScheme="blue"
-                                                                        cursor="pointer"
-                                                                        onClick={() => handleShowShares(shares)}
-                                                                    >
-                                                                        {totalCount}
-                                                                    </Badge>
-                                                                </Box>
+                                                                <Box className='flex flex-col justify-start items-start gap-1'>
+                                                                    <Box className='flex flex-row items-center justify-start gap-1'>
+                                                                        <Text>แชร์ทั้งหมด</Text>
+                                                                        <Badge
+                                                                            colorScheme="blue"
+                                                                            cursor="pointer"
+                                                                            onClick={() => handleShowShares(shares)}
+                                                                        >
+                                                                            {totalCount}
+                                                                        </Badge>
+                                                                    </Box>
 
-                                                                <Box className='flex flex-col items-center justify-start gap-1'>
-                                                                    <Badge colorScheme='green'>Line: {countBySocial.line}</Badge>
-                                                                    <Badge colorScheme='green'>Facebook: {countBySocial.facebook}</Badge>
-                                                                    <Badge colorScheme='green'>Copy: {countBySocial.copy}</Badge>
-                                                                    <Badge colorScheme='green'>Twitter: {countBySocial.twitter}</Badge>
-                                                                    <Badge colorScheme='green'>WhatsApp: {countBySocial.whatsapp}</Badge>
+                                                                    <Box className='flex flex-row items-center justify-start gap-1'>
+                                                                        <Badge colorScheme='green'>Line: {countBySocial.line}</Badge>
+                                                                        <Badge colorScheme='green'>Facebook: {countBySocial.facebook}</Badge>
+                                                                        <Badge colorScheme='green'>Copy: {countBySocial.copy}</Badge>
+                                                                        <Badge colorScheme='green'>Twitter: {countBySocial.twitter}</Badge>
+                                                                        <Badge colorScheme='green'>WhatsApp: {countBySocial.whatsapp}</Badge>
+                                                                    </Box>
                                                                 </Box>
                                                             </Td>
-                                                            <Td>
-                                                                <Box>
-                                                                    <Text>รายการโปรดทั้งหมด <Badge
+                                                            <Td><Box className='flex flex-col justify-start items-start gap-1'>
+                                                                <Box className='flex flex-row justify-start items-center gap-1'>
+                                                                    <Text>รายการโปรดทั้งหมด</Text>
+                                                                    <Badge
                                                                         colorScheme="blue"
                                                                         cursor="pointer"
                                                                         onClick={() => handleShowFavs(favs)}
                                                                     >
                                                                         {activeCount + canceledCount}
-                                                                    </Badge> </Text>
+                                                                    </Badge>
                                                                 </Box>
-                                                                <Box className='flex flex-col justify-center items-center gap-1'>
+                                                                <Box className='flex flex-row justify-center items-center gap-1'>
                                                                     <Badge
                                                                         colorScheme="green"
                                                                         cursor="pointer"
@@ -417,6 +506,7 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
                                                                         Canceled: {canceledCount}
                                                                     </Badge>
                                                                 </Box>
+                                                            </Box>
                                                             </Td>
                                                             <Td>
                                                                 <Badge
@@ -457,75 +547,79 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
                 </Modal>
             </Box>
 
-            {/* Modal for showing liked users */}
-            <Modal isOpen={selectedLikes.length > 0} onClose={() => setSelectedLikes([])}>
+            <Modal size="lg" isOpen={selectedLikes.length > 0} onClose={() => setSelectedLikes([])}>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>Liked Users</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
                         {selectedLikes.length > 0 ? (
-                            <TableContainer>
-                                <Table variant="simple">
-                                    <Thead>
-                                        <Tr>
-                                            <Th>User ID</Th>
-                                            <Th>Name</Th>
-                                        </Tr>
-                                    </Thead>
-                                    <Tbody>
-                                        {selectedLikes.map((userId, index) => (
-                                            <Tr key={index}>
-                                                <Td>{userId}</Td>
-                                                <Td>{likedUsers[userId]}</Td>
-                                            </Tr>
-                                        ))}
-                                    </Tbody>
-                                </Table>
-                            </TableContainer>
+                            <>
+                                <Box display="flex" justifyContent="space-between" py={2} px={4} fontWeight="bold" bg="gray.100" borderBottom="1px solid #e2e8f0">
+                                    <Text width="10%">No.</Text>
+                                    <Text width="45%">Name</Text>
+                                    <Text width="45%">User ID</Text>
+                                </Box>
+                                <PaginationView
+                                    itemsPerPage={10}
+                                    totalItems={selectedLikes.length}
+                                    items={selectedLikes.map((userId, index) => ({
+                                        no: index + 1,
+                                        userId,
+                                        userName: likedUsers[userId],
+                                    }))}
+                                    renderItem={(user, index) => (
+                                        <Box key={index} display="flex" justifyContent="space-between" py={2} px={4} borderBottom="1px solid #e2e8f0">
+                                            <Text width="10%">{user.no}</Text>
+                                            <Text width="45%">{user.userName}</Text>
+                                            <Text width="45%">{user.userId}</Text>
+                                        </Box>
+                                    )}
+                                />
+                            </>
                         ) : (
                             <Text>No liked users found.</Text>
                         )}
                     </ModalBody>
                     <ModalFooter>
-                        <Button colorScheme='blue' mr={3} onClick={() => setSelectedLikes([])}>
-                            Close
-                        </Button>
+                        <Box display="flex" justifyContent="center" width="100%">
+                            <Button colorScheme="blue" mr={3} onClick={() => setSelectedLikes([])}>
+                                Close
+                            </Button>
+                        </Box>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
 
-            {/* Modal to show shared users */}
-            <Modal isOpen={Object.keys(selectedShares).length > 0} onClose={() => setSelectedShares({})}>
+            <Modal size={'lg'} isOpen={Object.keys(selectedShares).length > 0} onClose={() => setSelectedShares({})}>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>Shared Users</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
                         {Object.keys(selectedShares).length > 0 ? (
-                            Object.keys(selectedShares).map((userId) => (
-                                <Box key={userId} mb={4}>
-                                    <Text fontWeight="bold">User ID: {userId} - Name: {sharedUsers[userId]}</Text>
-                                    <TableContainer>
-                                        <Table variant="simple">
-                                            <Thead>
-                                                <Tr>
-                                                    <Th>Time</Th>
-                                                    <Th>Social</Th>
-                                                </Tr>
-                                            </Thead>
-                                            <Tbody>
-                                                {Object.entries(selectedShares[userId]).map(([shareId, shareData]: any) => (
-                                                    <Tr key={shareId}>
-                                                        <Td>{shareData.datetime}</Td>
-                                                        <Td>{shareData.social}</Td>
-                                                    </Tr>
-                                                ))}
-                                            </Tbody>
-                                        </Table>
-                                    </TableContainer>
-                                </Box>
-                            ))
+                            <>
+                                <PaginationView
+                                    itemsPerPage={5}
+                                    totalItems={Object.keys(selectedShares).length}
+                                    items={Object.entries(selectedShares).map(([userId, shares]) => ({
+                                        userId,
+                                        userName: sharedUsers[userId],
+                                        shares,
+                                    }))}
+                                    renderItem={(user, index) => (
+                                        <Box key={index} mb={4}>
+                                            <Text fontWeight="bold">User ID: {user.userId} - Name: {user.userName}</Text>
+                                            {Object.entries(user.shares).map(([shareId, shareData]: any) => (
+                                                <Box key={shareId} display="flex" justifyContent="space-between" py={2} px={4} borderBottom="1px solid #e2e8f0">
+                                                    <Text width="50%">{shareData.datetime}</Text>
+                                                    <Text width="50%">{shareData.social}</Text>
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    )}
+                                />
+                            </>
                         ) : (
                             <Text>No shared data found.</Text>
                         )}
@@ -538,81 +632,81 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
                 </ModalContent>
             </Modal>
 
-            {Object.keys(selectedFavs).length > 0 && (
-                <Modal isOpen={true} onClose={() => setSelectedFavs({})} size={'lg'}>
-                    <ModalOverlay />
-                    <ModalContent>
-                        <ModalHeader>Favorite Changes</ModalHeader>
-                        <ModalCloseButton />
-                        <ModalBody>
-                            <TableContainer>
-                                <Table variant='simple'>
-                                    <Thead>
-                                        <Tr>
-                                            <Th>User ID</Th>
-                                            <Th>User Name</Th>
-                                            <Th>Status</Th>
-                                            <Th>Date Time</Th>
-                                        </Tr>
-                                    </Thead>
-                                    <Tbody>
-                                        {Object.keys(selectedFavs).map((userId, index) => {
-                                            const userFavs = selectedFavs[userId];
-                                            return Object.keys(userFavs).map((favId) => (
-                                                <Tr key={favId}>
-                                                    <Td>{userId}</Td>
-                                                    <Td>{favUsers[userId] || 'Unknown'}</Td>
-                                                    <Td>{userFavs[favId].status}</Td>
-                                                    <Td>{userFavs[favId].datetime}</Td>
-                                                </Tr>
-                                            ));
-                                        })}
-                                    </Tbody>
-                                </Table>
-                            </TableContainer>
-                        </ModalBody>
-                        <ModalFooter>
-                            <Button colorScheme='blue' mr={3} onClick={() => setSelectedFavs({})}>
-                                Close
-                            </Button>
-                        </ModalFooter>
-                    </ModalContent>
-                </Modal>
-            )}
-
-            <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} size="lg">
+            <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} size="6xl">
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>View Details</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
-                        <TableContainer>
-                            <Table variant="simple">
-                                <Thead>
-                                    <Tr>
-                                        <Th>User ID</Th>
-                                        <Th>User Name</Th>
-                                        <Th>View Count</Th>
-                                        <Th>Last View</Th>
-                                    </Tr>
-                                </Thead>
-                                <Tbody>
-                                    {selectedViews.map((view, index) => (
-                                        <Tr key={index}>
-                                            <Td>{view.userId}</Td>
-                                            <Td>{view.userName}</Td>
-                                            <Td>{view.viewCount}</Td>
-                                            <Td>{view.lastView}</Td>
-                                        </Tr>
-                                    ))}
-                                </Tbody>
-                            </Table>
-                        </TableContainer>
+                        <Box display="flex" justifyContent="space-between" py={2} px={4} fontWeight="bold" bg="gray.100" borderBottom="1px solid #e2e8f0">
+                            <Text width="20%">User ID</Text>
+                            <Text width="30%">User Name</Text>
+                            <Text width="20%">View Count</Text>
+                            <Text width="30%">Last View</Text>
+                        </Box>
+                        <PaginationView
+                            itemsPerPage={10}
+                            totalItems={selectedViews.length}
+                            items={selectedViews}
+                            renderItem={(view, index) => (
+                                <Box key={index} display="flex" justifyContent="space-between" py={2} px={4} borderBottom="1px solid #e2e8f0">
+                                    <Text width="20%">{view.userId}</Text>
+                                    <Text width="30%">{view.userName}</Text>
+                                    <Text width="20%">{view.viewCount}</Text>
+                                    <Text width="30%">{view.lastView}</Text>
+                                </Box>
+                            )}
+                        />
                     </ModalBody>
                     <ModalFooter>
-                        <Button colorScheme="blue" onClick={() => setViewModalOpen(false)}>
-                            Close
-                        </Button>
+                        <Box display="flex" justifyContent="center" width="100%">
+                            <Button colorScheme="blue" onClick={() => setViewModalOpen(false)}>
+                                Close
+                            </Button>
+                        </Box>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            <Modal isOpen={Object.keys(selectedFavs).length > 0} onClose={() => setSelectedFavs({})} size={'3xl'}>
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Favorite Changes</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        <Box display="flex" justifyContent="space-between" py={2} px={4} fontWeight="bold" bg="gray.100" borderBottom="1px solid #e2e8f0">
+                            <Text width="20%">User ID</Text>
+                            <Text width="30%">User Name</Text>
+                            <Text width="20%">Status</Text>
+                            <Text width="30%">Date Time</Text>
+                        </Box>
+                        <PaginationView
+                            itemsPerPage={10}
+                            totalItems={Object.values(selectedFavs).reduce((count, userFavs) => count + Object.keys(userFavs).length, 0)}
+                            items={Object.entries(selectedFavs).flatMap(([userId, userFavs]) =>
+                                Object.entries(userFavs).map(([favId, favData]) => ({
+                                    userId,
+                                    userName: favUsers[userId] || 'Unknown',
+                                    status: favData.status,
+                                    datetime: favData.datetime,
+                                }))
+                            )}
+                            renderItem={(fav, index) => (
+                                <Box key={index} display="flex" justifyContent="space-between" py={2} px={4} borderBottom="1px solid #e2e8f0">
+                                    <Text width="20%">{fav.userId}</Text>
+                                    <Text width="30%">{fav.userName}</Text>
+                                    <Text width="20%">{fav.status}</Text>
+                                    <Text width="30%">{fav.datetime}</Text>
+                                </Box>
+                            )}
+                        />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Box display="flex" justifyContent="center" width="100%">
+                            <Button colorScheme="blue" onClick={() => setSelectedFavs({})}>
+                                Close
+                            </Button>
+                        </Box>
                     </ModalFooter>
                 </ModalContent>
             </Modal>

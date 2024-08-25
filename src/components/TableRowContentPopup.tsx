@@ -53,13 +53,26 @@ const TableRowContentPopup: React.FC<TableRowContentPopupProps> = ({ id }) => {
 
     const exportToExcel = () => {
         const ws = XLSX.utils.json_to_sheet(
-            contentData.map((content: any, index: any) => ({
-                No: index + 1,
-                Title: content.title,
-                CreatedAt: new Date(content.created_at).toLocaleString(),
-                Status: content.status === 'Yes' ? 'เปิด' : 'ปิด',
-                LogVideo: content.log_video ? JSON.stringify(parseLogVideo(content.log_video)) : 'No Log Video',
-            }))
+            contentData.map((content: any, index: any) => {
+                const logVideo = content.log_video ? JSON.stringify(parseLogVideo(content.log_video)) : 'No Log Video';
+                const maxLength = 32767;
+                let logVideoParts = [];
+    
+                // Split the logVideo string into chunks of 32767 characters
+                for (let i = 0; i < logVideo.length; i += maxLength) {
+                    logVideoParts.push(logVideo.substring(i, i + maxLength));
+                }
+    
+                return {
+                    No: index + 1,
+                    Title: content.title,
+                    CreatedAt: new Date(content.created_at).toLocaleString(),
+                    Status: content.status === 'Yes' ? 'เปิด' : 'ปิด',
+                    LogVideoPart1: logVideoParts[0] || '',
+                    LogVideoPart2: logVideoParts[1] || '',
+                    // Add more parts if necessary
+                };
+            })
         );
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "ContentPopup");
@@ -67,7 +80,7 @@ const TableRowContentPopup: React.FC<TableRowContentPopupProps> = ({ id }) => {
         const data = new Blob([excelBuffer], { type: "application/octet-stream" });
         saveAs(data, "ContentPopup.xlsx");
     };
-
+    
     return (
         <>
             <Tr>

@@ -11,7 +11,9 @@ import { btnStype } from './css/stypeall';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import PaginationView from './PaginationView';
-
+import NProgress from 'nprogress';
+import '../components/css/custom-nprogress.css'
+import 'nprogress/nprogress.css';
 interface TableRowProps {
     id: number;
     name_page: string;
@@ -44,6 +46,7 @@ const TableRowNews: React.FC<TableRowProps> = ({ id, name_page }) => {
     }, [selectedLikes, selectedFavs, selectedShares, selectedViews]);
 
     const handleSearch = async () => {
+        NProgress.start();
         setLoading(true);
         setError(null);
         setNewsItems([]);
@@ -73,6 +76,7 @@ const TableRowNews: React.FC<TableRowProps> = ({ id, name_page }) => {
             setError('Error fetching news data');
         } finally {
             setLoading(false);
+            NProgress.done();
             onOpen();
         }
     };
@@ -148,19 +152,38 @@ const TableRowNews: React.FC<TableRowProps> = ({ id, name_page }) => {
         return { changedFavs, activeCount, canceledCount };
     };
 
-    const handleShowLikes = (likes: string[]) => {
-        setSelectedLikes(likes);
+    const handleShowLikes = async (likes: string[]) => {
+        NProgress.start(); // Start the loading bar
+        try {
+            await fetchLikedUsers(likes);
+            setSelectedLikes(likes);
+        } finally {
+            NProgress.done(); // Complete the loading bar
+        }
     };
 
-    const handleShowShares = (shares: any) => {
-        setSelectedShares(shares);
+    const handleShowShares = async (shares: any) => {
+        NProgress.start();
+        try {
+            await fetchLikedUsers(Object.keys(shares));
+            setSelectedShares(shares);
+        } finally {
+            NProgress.done();
+        }
     };
 
-    const handleShowFavs = (favs: any) => {
-        setSelectedFavs(favs);
+    const handleShowFavs = async (favs: any) => {
+        NProgress.start();
+        try {
+            await fetchLikedUsers(Object.keys(favs));
+            setSelectedFavs(favs);
+        } finally {
+            NProgress.done();
+        }
     };
 
     const handleShowViews = async (views: any) => {
+        NProgress.start();
         const viewDetails = await Promise.all(
             Object.entries(views).map(async ([userId, viewData]) => {
                 const response = await axios.get(`http://localhost:3000/users`, { params: { user_id: userId } });
@@ -175,6 +198,7 @@ const TableRowNews: React.FC<TableRowProps> = ({ id, name_page }) => {
         );
 
         setSelectedViews(viewDetails);
+        NProgress.done();
         setViewModalOpen(true);
     };
 
@@ -194,30 +218,155 @@ const TableRowNews: React.FC<TableRowProps> = ({ id, name_page }) => {
         setCurrentPage(page);
     };
 
-    const exportToExcel = () => {
-        const ws = XLSX.utils.json_to_sheet(newsItems.map((news, index) => {
-            const { activeCount, canceledCount } = filterFavChanges(JSON.parse(news.user_fav));
-            const { countBySocial } = countShares(JSON.parse(news.user_share));
-
-            return {
-                No: startIndex + index + 1,
-                Title: news.title,
-                Created_At: news.created_at,
-                User_Like_Count: news.user_like ? JSON.parse(news.user_like).length : 0,
-                User_Share_Line: countBySocial.line || 0,
-                User_Share_Facebook: countBySocial.facebook || 0,
-                User_Share_Copy: countBySocial.copy || 0,
-                User_Fav_Changes: `Active: ${activeCount}, Canceled: ${canceledCount}`,
-                User_View: Object.keys(JSON.parse(news.user_view)).length,
-            };
-        }));
-
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, ws, "NewsItems");
-        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(data, "newsItems.xlsx");
+    const fetchUserDetailsForExport = async (userIds: string[]): Promise<{ [key: string]: string }> => {
+        try {
+            const chunks = [];
+            const chunkSize = 50;
+            for (let i = 0; i < userIds.length; i += chunkSize) {
+                chunks.push(userIds.slice(i, i + chunkSize));
+            }
+    
+            const userMap: { [key: string]: string } = {};
+    
+            for (const chunk of chunks) {
+                const responses = await Promise.all(
+                    chunk.map(userId =>
+                        axios.get(`http://localhost:3000/users`, { params: { user_id: userId } })
+                    )
+                );
+    
+                responses.forEach((response) => {
+                    if (response.data.length > 0) {
+                        const user = response.data[0];
+                        userMap[user.id] = user.name;
+                    }
+                });
+            }
+    
+            return userMap;
+        } catch (error) {
+            console.error('Error fetching user details:', error);
+            return {};
+        }
     };
+    const fetchAllDataForExport = async () => {
+        const allLikes = newsItems.flatMap((product, index) => 
+            (JSON.parse(product.user_like) || []).map(userId => ({
+                productNo: index + 1,
+                productTitle: product.title,
+                userId
+            }))
+        );
+    
+        const allShares = newsItems.flatMap((product, index) => 
+            Object.entries(JSON.parse(product.user_share) || {}).flatMap(([userId, shares]) =>
+                Object.entries(shares).map(([, shareData]) => ({
+                    productNo: index + 1,
+                    productTitle: product.title,
+                    userId,
+                    ...shareData
+                }))
+            )
+        );
+    
+        const allFavs = newsItems.flatMap((product, index) => 
+            Object.entries(JSON.parse(product.user_fav) || {}).flatMap(([userId, favs]) =>
+                Object.entries(favs).map(([, favData]) => ({
+                    productNo: index + 1,
+                    productTitle: product.title,
+                    userId,
+                    ...favData
+                }))
+            )
+        );
+    
+        const allViews = newsItems.flatMap((product, index) => {
+            const views = JSON.parse(product.user_view) || {};
+            return Object.entries(views).map(([userId, viewData]) => ({
+                productNo: index + 1,
+                productTitle: product.title,
+                userId,
+                viewCount: Object.keys(viewData).length,
+                lastView: viewData[Object.keys(viewData).pop()].datetime,
+            }));
+        });
+    
+        const allUserIds = new Set([
+            ...allLikes.map(like => like.userId),
+            ...allShares.map(share => share.userId),
+            ...allFavs.map(fav => fav.userId),
+            ...allViews.map(view => view.userId)
+        ]);
+    
+        const userDetailsMap = await fetchUserDetailsForExport(Array.from(allUserIds));
+    
+        return {
+            likes: allLikes.map(like => ({
+                ...like,
+                userName: userDetailsMap[like.userId] || 'Unknown'
+            })),
+            shares: allShares.map(share => ({
+                ...share,
+                userName: userDetailsMap[share.userId] || 'Unknown'
+            })),
+            favs: allFavs.map(fav => ({
+                ...fav,
+                userName: userDetailsMap[fav.userId] || 'Unknown'
+            })),
+            views: allViews.map(view => ({
+                ...view,
+                userName: userDetailsMap[view.userId] || 'Unknown'
+            }))
+        };
+    };
+    const exportToExcel = async () => {
+        NProgress.start();
+
+        try {
+            const allData = await fetchAllDataForExport();
+
+            // Create sheets
+            const ws = XLSX.utils.json_to_sheet(newsItems.map((news, index) => {
+                const { activeCount, canceledCount } = filterFavChanges(JSON.parse(news.user_fav));
+                const { countBySocial } = countShares(JSON.parse(news.user_share));
+    
+                return {
+                    No: startIndex + index + 1,
+                    Title: news.title,
+                    Created_At: news.created_at,
+                    User_Like_Count: news.user_like ? JSON.parse(news.user_like).length : 0,
+                    User_Share_Line: countBySocial.line || 0,
+                    User_Share_Facebook: countBySocial.facebook || 0,
+                    User_Share_Copy: countBySocial.copy || 0,
+                    User_Fav_Changes: `Active: ${activeCount}, Canceled: ${canceledCount}`,
+                    User_View: Object.keys(JSON.parse(news.user_view)).length,
+                };
+            }));
+
+            const wsUserLikes = XLSX.utils.json_to_sheet(allData.likes);
+            const wsUserShares = XLSX.utils.json_to_sheet(allData.shares);
+            const wsUserFavs = XLSX.utils.json_to_sheet(allData.favs);
+            const wsUserViews = XLSX.utils.json_to_sheet(allData.views);
+    
+            // Create workbook and append sheets
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Products");
+            XLSX.utils.book_append_sheet(wb, wsUserLikes, "User Likes");
+            XLSX.utils.book_append_sheet(wb, wsUserShares, "User Shares");
+            XLSX.utils.book_append_sheet(wb, wsUserFavs, "User Favs");
+            XLSX.utils.book_append_sheet(wb, wsUserViews, "User Views");
+    
+            // Write the workbook and trigger download
+            const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+            const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+            saveAs(data, "newsItems.xlsx");
+        } catch (error) {
+            console.error('Error exporting to Excel:', error);
+        } finally {
+            NProgress.done();
+        }
+    };
+
 
     return (
         <>
@@ -390,95 +539,79 @@ const TableRowNews: React.FC<TableRowProps> = ({ id, name_page }) => {
                 </Modal>
             </Box>
 
-            {/* Modal for showing liked users */}
-            <Modal size={'lg'} isOpen={selectedLikes.length > 0} onClose={() => setSelectedLikes([])}>
+            <Modal size="lg" isOpen={selectedLikes.length > 0} onClose={() => setSelectedLikes([])}>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>Liked Users</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
                         {selectedLikes.length > 0 ? (
-                            <TableContainer>
-                                <Table variant="simple">
-                                    <Thead>
-                                        <Tr>
-                                            <Th>User ID</Th>
-                                            <Th>Name</Th>
-                                        </Tr>
-                                    </Thead>
-                                    <Tbody>
-                                        <PaginationView
-                                            itemsPerPage={10}
-                                            totalItems={selectedLikes.length}
-                                            items={selectedLikes.map((userId, index) => ({
-                                                userId,
-                                                userName: likedUsers[userId],
-                                            }))}
-                                            renderItem={(view, index) => (
-                                                <Tr key={index}>
-                                                    <Td>{view.userId}</Td>
-                                                    <Td>{view.userName}</Td>
-                                                </Tr>
-                                            )}
-                                        />
-                                    </Tbody>
-                                </Table>
-                            </TableContainer>
+                            <>
+                                <Box display="flex" justifyContent="space-between" py={2} px={4} fontWeight="bold" bg="gray.100" borderBottom="1px solid #e2e8f0">
+                                    <Text width="10%">No.</Text>
+                                    <Text width="45%">Name</Text>
+                                    <Text width="45%">User ID</Text>
+                                </Box>
+                                <PaginationView
+                                    itemsPerPage={10}
+                                    totalItems={selectedLikes.length}
+                                    items={selectedLikes.map((userId, index) => ({
+                                        no: index + 1,
+                                        userId,
+                                        userName: likedUsers[userId],
+                                    }))}
+                                    renderItem={(user, index) => (
+                                        <Box key={index} display="flex" justifyContent="space-between" py={2} px={4} borderBottom="1px solid #e2e8f0">
+                                            <Text width="10%">{user.no}</Text>
+                                            <Text width="45%">{user.userName}</Text>
+                                            <Text width="45%">{user.userId}</Text>
+                                        </Box>
+                                    )}
+                                />
+                            </>
                         ) : (
                             <Text>No liked users found.</Text>
                         )}
                     </ModalBody>
                     <ModalFooter>
-                        <Button colorScheme='blue' mr={3} onClick={() => setSelectedLikes([])}>
-                            Close
-                        </Button>
+                        <Box display="flex" justifyContent="center" width="100%">
+                            <Button colorScheme="blue" mr={3} onClick={() => setSelectedLikes([])}>
+                                Close
+                            </Button>
+                        </Box>
                     </ModalFooter>
                 </ModalContent>
             </Modal>
 
-            {/* Modal to show shared users */}
-            <Modal isOpen={Object.keys(selectedShares).length > 0} onClose={() => setSelectedShares({})}>
+            <Modal size={'lg'} isOpen={Object.keys(selectedShares).length > 0} onClose={() => setSelectedShares({})}>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>Shared Users</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
                         {Object.keys(selectedShares).length > 0 ? (
-                            <PaginationView
-                                itemsPerPage={10}
-                                totalItems={Object.keys(selectedShares).length}
-                                items={Object.keys(selectedShares).map(userId => ({
-                                    userId,
-                                    userName: sharedUsers[userId],
-                                    shares: Object.entries(selectedShares[userId]).map(([shareId, shareData]) => ({
-                                        datetime: shareData.datetime,
-                                        social: shareData.social,
-                                    })),
-                                }))}
-                                renderItem={(view, index) => (
-                                    <Box key={index} mb={4}>
-                                        <Text fontWeight="bold">User ID: {view.userId} - Name: {view.userName}</Text>
-                                        <TableContainer>
-                                            <Table variant="simple">
-                                                <Thead>
-                                                    <Tr>
-                                                        <Th>Time</Th>
-                                                        <Th>Social</Th>
-                                                    </Tr>
-                                                </Thead>
-                                                <Tbody>
-                                                    {view.shares.map((share, idx) => (
-                                                        <Tr key={idx}>
-                                                            <Td>{share.datetime}</Td>
-                                                            <Td>{share.social}</Td>
-                                                        </Tr>
-                                                    ))}
-                                                </Tbody>
-                                            </Table>
-                                        </TableContainer>
-                                    </Box>
-                                )}
-                            />
+                            <>
+                                <PaginationView
+                                    itemsPerPage={5}
+                                    totalItems={Object.keys(selectedShares).length}
+                                    items={Object.entries(selectedShares).map(([userId, shares]) => ({
+                                        userId,
+                                        userName: sharedUsers[userId],
+                                        shares,
+                                    }))}
+                                    renderItem={(user, index) => (
+                                        <Box key={index} mb={4}>
+                                            <Text fontWeight="bold">User ID: {user.userId} - Name: {user.userName}</Text>
+                                            {Object.entries(user.shares).map(([shareId, shareData]: any) => (
+                                                <Box key={shareId} display="flex" justifyContent="space-between" py={2} px={4} borderBottom="1px solid #e2e8f0">
+                                                    <Text width="50%">{shareData.datetime}</Text>
+                                                    <Text width="50%">{shareData.social}</Text>
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    )}
+                                />
+                            </>
                         ) : (
                             <Text>No shared data found.</Text>
                         )}
@@ -491,31 +624,81 @@ const TableRowNews: React.FC<TableRowProps> = ({ id, name_page }) => {
                 </ModalContent>
             </Modal>
 
-            {/* Modal for showing viewed users with pagination */}
-            <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} size="4xl">
+            <Modal isOpen={viewModalOpen} onClose={() => setViewModalOpen(false)} size="6xl">
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>View Details</ModalHeader>
                     <ModalCloseButton />
                     <ModalBody>
+                        <Box display="flex" justifyContent="space-between" py={2} px={4} fontWeight="bold" bg="gray.100" borderBottom="1px solid #e2e8f0">
+                            <Text width="20%">User ID</Text>
+                            <Text width="30%">User Name</Text>
+                            <Text width="20%">View Count</Text>
+                            <Text width="30%">Last View</Text>
+                        </Box>
                         <PaginationView
                             itemsPerPage={10}
                             totalItems={selectedViews.length}
                             items={selectedViews}
                             renderItem={(view, index) => (
-                                <Tr key={index}>
-                                    <Td>{view.userId}</Td>
-                                    <Td>{view.userName}</Td>
-                                    <Td>{view.viewCount}</Td>
-                                    <Td>{view.lastView}</Td>
-                                </Tr>
+                                <Box key={index} display="flex" justifyContent="space-between" py={2} px={4} borderBottom="1px solid #e2e8f0">
+                                    <Text width="20%">{view.userId}</Text>
+                                    <Text width="30%">{view.userName}</Text>
+                                    <Text width="20%">{view.viewCount}</Text>
+                                    <Text width="30%">{view.lastView}</Text>
+                                </Box>
                             )}
                         />
                     </ModalBody>
                     <ModalFooter>
-                        <Button colorScheme="blue" onClick={() => setViewModalOpen(false)} ml={3}>
-                            Close
-                        </Button>
+                        <Box display="flex" justifyContent="center" width="100%">
+                            <Button colorScheme="blue" onClick={() => setViewModalOpen(false)}>
+                                Close
+                            </Button>
+                        </Box>
+                    </ModalFooter>
+                </ModalContent>
+            </Modal>
+
+            <Modal isOpen={Object.keys(selectedFavs).length > 0} onClose={() => setSelectedFavs({})} size={'3xl'}>
+                <ModalOverlay />
+                <ModalContent>
+                    <ModalHeader>Favorite Changes</ModalHeader>
+                    <ModalCloseButton />
+                    <ModalBody>
+                        <Box display="flex" justifyContent="space-between" py={2} px={4} fontWeight="bold" bg="gray.100" borderBottom="1px solid #e2e8f0">
+                            <Text width="20%">User ID</Text>
+                            <Text width="30%">User Name</Text>
+                            <Text width="20%">Status</Text>
+                            <Text width="30%">Date Time</Text>
+                        </Box>
+                        <PaginationView
+                            itemsPerPage={10}
+                            totalItems={Object.values(selectedFavs).reduce((count, userFavs) => count + Object.keys(userFavs).length, 0)}
+                            items={Object.entries(selectedFavs).flatMap(([userId, userFavs]) =>
+                                Object.entries(userFavs).map(([favId, favData]) => ({
+                                    userId,
+                                    userName: favUsers[userId] || 'Unknown',
+                                    status: favData.status,
+                                    datetime: favData.datetime,
+                                }))
+                            )}
+                            renderItem={(fav, index) => (
+                                <Box key={index} display="flex" justifyContent="space-between" py={2} px={4} borderBottom="1px solid #e2e8f0">
+                                    <Text width="20%">{fav.userId}</Text>
+                                    <Text width="30%">{fav.userName}</Text>
+                                    <Text width="20%">{fav.status}</Text>
+                                    <Text width="30%">{fav.datetime}</Text>
+                                </Box>
+                            )}
+                        />
+                    </ModalBody>
+                    <ModalFooter>
+                        <Box display="flex" justifyContent="center" width="100%">
+                            <Button colorScheme="blue" onClick={() => setSelectedFavs({})}>
+                                Close
+                            </Button>
+                        </Box>
                     </ModalFooter>
                 </ModalContent>
             </Modal>

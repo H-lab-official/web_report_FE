@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Button, ButtonGroup, TableContainer, Tr, Td, Thead, Tbody, Th, Table,Text } from '@chakra-ui/react';
+import { Box, Button, ButtonGroup, Text, Tr } from '@chakra-ui/react';
 
 interface PaginationViewProps<T> {
     itemsPerPage: number;
@@ -29,18 +29,18 @@ const PaginationView = <T extends unknown>({ itemsPerPage, totalItems, items, re
         <>
             {getPageItems().map(renderItem)}
 
-            <Box mt={4} display="flex" justifyContent="center">
-                <ButtonGroup>
+            <Box mt={4} display="flex" justifyContent="center" alignItems="center">
+               
                     <Button onClick={goToPreviousPage} disabled={currentPage === 1}>
                         Previous
                     </Button>
-                    <Text>
+                    <Text mx={2}>
                         Page {currentPage} of {totalPages}
                     </Text>
                     <Button onClick={goToNextPage} disabled={currentPage === totalPages}>
                         Next
                     </Button>
-                </ButtonGroup>
+              
             </Box>
         </>
     );
