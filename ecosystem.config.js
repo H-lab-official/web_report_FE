@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'financial-health-check',
+      name: 'web_report_FE',
       script: 'serve',
       args: '-s dist',  // The '-s' flag indicates serving a single-page application
       env: {
