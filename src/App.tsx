@@ -53,7 +53,7 @@ function App() {
     { id: 2, log_content: 'Insurance Business Owner_icon', name_page: 'Insurance Business Owner_icon' },
     { id: 2, log_content: 'Pre AVP_icon', name_page: 'Pre AVP_icon' },
     { id: 2, log_content: 'New AVP_icon', name_page: 'New AVP_icon' },
-    { id: 2, log_content: 'New GM and AVP Orientation_icoon', name_page: 'New GM and AVP Orientation_icoon' },
+    { id: 2, log_content: 'New GM and AVP Orientation_icon', name_page: 'New GM and AVP Orientation_icon' },
     { id: 2, log_content: 'AVP Hero_icon', name_page: 'AVP Hero_icon' },
     { id: 2, log_content: 'New AVP Weekly Meeting_icon', name_page: 'New AVP Weekly Meeting_icon' },
     { id: 2, log_content: 'ดูเส้นทางอาชีพเพิ่มเติม_button', name_page: 'ดูเส้นทางอาชีพเพิ่มเติม_button' },
@@ -263,7 +263,7 @@ function App() {
                     </Td>
 
                   </Tr>
-                  <TableRowTraining id={1} name_page="training" />
+                  <TableRowTraining id={1} name_page="Training" />
                   <Tr className='bg-slate-400 rounded-lg'>
                     <Td colSpan={9} className='border border-gray-500 bg-slate-400 rounded-lg  py-2'>
                       <Text className='text-white font-semibold text-center'>|</Text>

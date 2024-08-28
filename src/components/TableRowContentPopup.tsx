@@ -91,7 +91,7 @@ const TableRowContentPopup: React.FC<TableRowContentPopupProps> = ({ id }) => {
                 <Td> <Button variant="solid" sx={btnStype} onClick={onOpen}>Search</Button></Td>
             </Tr>
 
-            <Modal isOpen={isOpen} onClose={onClose} size={'6xl'}>
+            <Modal isOpen={isOpen} onClose={onClose} size={'full'}>
                 <ModalOverlay />
                 <ModalContent>
                     <ModalHeader>Content Details</ModalHeader>

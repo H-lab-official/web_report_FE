@@ -21,9 +21,12 @@ import { ArrowUpDownIcon } from '@chakra-ui/icons';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import axios from 'axios';
-import './css/TableRow.css';
-import Pagination from './Pagination';
-import { btnStype, btnStypeExcel } from './css/stypeall';
+import '@/components/css/TableRow.css';
+import Pagination from '@/components/Pagination';
+import { btnStype, btnStypeExcel } from '@/components/css/stypeall';
+import NProgress from 'nprogress';
+import '../components/css/custom-nprogress.css'
+import 'nprogress/nprogress.css';
 
 interface TableRowProps {
     id: number;
@@ -98,6 +101,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
     }, [selectedLikes, selectedDislikes, selectedFavs, selectedShares, selectedViews]);
 
     const handleSearch = async () => {
+        NProgress.start();
         setLoading(true);
         setError(null);
         setLogs([]);
@@ -158,6 +162,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
             setError('Error fetching logs');
         } finally {
             setLoading(false);
+            NProgress.done();
             onOpen();
         }
     };
@@ -191,7 +196,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                 }
             });
 
-            console.log('Fetched User Map:', userMap); // Add this line to log the fetched user map
+            console.log('Fetched User Map:', userMap);
 
             setUserState(userMap);
         } catch (error) {
@@ -201,22 +206,33 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
 
 
     const handleShowLikes = (likes: string[]) => {
+        NProgress.start();
         setSelectedLikes(likes);
+        NProgress.done();
     };
 
     const handleShowDislikes = (dislikes: string[]) => {
+        NProgress.start();
         setSelectedDislikes(dislikes);
+        NProgress.done();
     };
 
     const handleShowShares = (shares: any) => {
+        NProgress.start();
         setSelectedShares(shares);
+        NProgress.done();
     };
 
     const handleShowFavs = (favs: any) => {
+        NProgress.start();
         setSelectedFavs(favs);
+        NProgress.done();
     };
 
-    const handleShowViews = async (views: any) => {
+    interface ViewData {
+        [key: string]: { datetime: string };
+    }
+    const handleShowViews = async (views: Record<string, ViewData>) => {
         const viewDetails = await Promise.all(
             Object.entries(views).map(async ([userId, viewData]) => {
                 const response = await axios.get(`${import.meta.env.VITE_API_URL}/users`, { params: { user_id: userId } });
@@ -225,7 +241,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                     userId,
                     userName,
                     viewCount: Object.keys(viewData).length,
-                    lastView: viewData[Object.keys(viewData).pop()].datetime
+                    lastView: viewData[Object.keys(viewData).pop()!].datetime,
                 };
             })
         );
@@ -255,11 +271,14 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
     const goToPage = (page: number) => {
         setCurrentPage(page);
     };
-    const handleExport = () => {
-        setTimeout(exportToExcel, 500); // Delay export to give state time to update
-    }
+    const handleExport = async () => {
+        NProgress.start();
+        await exportToExcel();
+        NProgress.done();
+    };
+
     const exportToExcel = async () => {
-        // Helper function to fetch user details
+
         const fetchUserDetailsForExport = async (userIds: string[]) => {
             try {
                 const responses = await Promise.all(
@@ -267,7 +286,7 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                         axios.get(`${import.meta.env.VITE_API_URL}/users`, { params: { user_id: userId } })
                     )
                 );
-    
+
                 const userMap: { [key: string]: string } = {};
                 responses.forEach((response) => {
                     if (response.data.length > 0) {
@@ -281,8 +300,6 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                 return {};
             }
         };
-    
-        // Fetch user details for likes, dislikes, shares, favs, and views
         const likedUsersMap = await fetchUserDetailsForExport(
             logs.flatMap(log => JSON.parse(log.user_like || '[]'))
         );
@@ -298,9 +315,13 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
         const viewedUsersMap = await fetchUserDetailsForExport(
             logs.flatMap(log => Object.keys(JSON.parse(log.user_view || '{}')))
         );
-    
-        // Function to create sheets for user interactions
-        const createUserSheet = (logs: any[], key: string, parseFunc: (data: any, log: any) => any[], userMap: { [key: string]: string }) => {
+
+        const createUserSheet = (
+            logs: any[],
+            key: string,
+            parseFunc: (data: any, log: any, userMap: { [key: string]: string }) => any[],
+            userMap: { [key: string]: string }
+        ) => {
             const userLogs = logs.flatMap(log => {
                 const parsedData = log[key] ? parseFunc(JSON.parse(log[key]), log, userMap) : [];
                 return parsedData.map((item: any, index: number) => ({
@@ -310,13 +331,14 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
             });
             return XLSX.utils.json_to_sheet(userLogs);
         };
-    
-        // Define parse functions for each interaction type
+
+
         const parseLikesDislikes = (data: string[], log: any, userMap: { [key: string]: string }) =>
             data.map(userId => ({
                 Name: userMap[userId] || 'Unknown',
             }));
-    
+
+
         const parseShares = (data: any, log: any, userMap: { [key: string]: string }) => {
             const shares = [];
             for (const userId in data) {
@@ -331,22 +353,36 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
             }
             return shares;
         };
-    
+        interface FavData {
+            status: string;
+            datetime: string;
+        }
         const parseFavs = (data: any, log: any, userMap: { [key: string]: string }) =>
-            Object.entries(data).map(([userId, favData]) => ({
-                Name: userMap[userId] || 'Unknown',
-                Status: favData.status,
-                Time: favData.datetime
-            }));
-    
+            Object.entries(data).map(([userId, favData]) => {
+                const fav = favData as FavData;
+                return {
+                    Name: userMap[userId] || 'Unknown',
+                    Status: fav.status,
+                    Time: fav.datetime
+                };
+            });
+        interface ViewData {
+            [key: string]: { datetime: string };
+        }
         const parseViews = (data: any, log: any, userMap: { [key: string]: string }) =>
-            Object.entries(data).map(([userId, viewData]) => ({
-                Name: userMap[userId] || 'Unknown',
-                View_Count: Object.keys(viewData).length,
-                Last_View: viewData[Object.keys(viewData).pop()].datetime
-            }));
-    
-        // Create the main sheet for logs
+            Object.entries(data).map(([userId, viewData]) => {
+                const views = viewData as ViewData;
+                return {
+                    Name: userMap[userId] || 'Unknown',
+                    View_Count: Object.keys(views).length,
+                    Last_View: views[Object.keys(views).pop()!].datetime
+                };
+            });
+        const stripHtmlTags = (html: string): string => {
+            const doc = new DOMParser().parseFromString(html, 'text/html');
+            return doc.body.textContent || "";
+        };
+
         const logsSheet = XLSX.utils.json_to_sheet(logs.map((log, index) => ({
             No: startIndex + index + 1,
             title: log.title,
@@ -359,19 +395,15 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
             user_fav: log.user_fav ? Object.keys(JSON.parse(log.user_fav)).length : 0,
             user_view: log.user_view ? Object.keys(JSON.parse(log.user_view)).length : 0,
             log_rating: log.log_rating,
-            location_detail: log.location_detail,
+            location_detail: stripHtmlTags(log.location_detail),
             link_map: log.link_map,
             link_out: log.link_out,
         })));
-    
-        // Create the sheets for user interactions
         const userLikesSheet = createUserSheet(logs, 'user_like', parseLikesDislikes, likedUsersMap);
         const userDislikesSheet = createUserSheet(logs, 'user_dislike', parseLikesDislikes, dislikedUsersMap);
         const userSharesSheet = createUserSheet(logs, 'user_share', parseShares, sharedUsersMap);
         const userFavsSheet = createUserSheet(logs, 'user_fav', parseFavs, favUsersMap);
         const userViewsSheet = createUserSheet(logs, 'user_view', parseViews, viewedUsersMap);
-    
-        // Create a new workbook and append all sheets
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, logsSheet, "Logs");
         XLSX.utils.book_append_sheet(wb, userLikesSheet, "User Likes");
@@ -379,16 +411,10 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
         XLSX.utils.book_append_sheet(wb, userSharesSheet, "User Shares");
         XLSX.utils.book_append_sheet(wb, userFavsSheet, "User Favs");
         XLSX.utils.book_append_sheet(wb, userViewsSheet, "User Views");
-    
-        // Write the workbook and trigger the download
         const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
         const data = new Blob([excelBuffer], { type: "application/octet-stream" });
         saveAs(data, name_page === 'ตารางสอบ' ? "logsExam.xlsx" : "logsTraining.xlsx");
     };
-    
-
-
-
     const sortLogs = (key: string) => {
         let direction = 'ascending';
         if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -482,7 +508,6 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
                                                     <Th>{name_page === 'ตารางสอบ' ? 'สถานที่สอบ' : 'หัวข้อ'}</Th>
                                                     <Th>{name_page === 'ตารางสอบ' ? 'สอบวันที่' : 'เริ่มอบรมวันที่'}</Th>
                                                     {name_page === 'ตารางสอบ' ? "" : <Th>ถึงวันที่</Th>}
-
                                                     <Th>Created At <ArrowUpDownIcon onClick={() => sortLogs('created_at')} className='cursor-pointer' /></Th>
                                                     <Th>User Like</Th>
                                                     <Th>User Dislike</Th>
