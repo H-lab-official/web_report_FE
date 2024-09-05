@@ -3,7 +3,7 @@ import {
     Tr, Td, Input, Button, Modal, ModalOverlay, ModalContent,
     ModalHeader, ModalFooter, ModalBody, ModalCloseButton,
     useDisclosure, Table, Thead, Tbody, Th, TableContainer,
-    Spinner, Alert, AlertIcon, Box, Text, Badge
+    Spinner, Alert, AlertIcon, Box, Text, Badge,Select
 } from '@chakra-ui/react';
 import PaginationView from './PaginationView';
 import axios from 'axios';
@@ -36,8 +36,23 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
     const [favUsers, setFavUsers] = useState<{ [key: string]: string }>({});
     const [selectedViews, setSelectedViews] = useState<any[]>([]);
     const [viewModalOpen, setViewModalOpen] = useState<boolean>(false);
+    const [titleOptions, setTitleOptions] = useState<string[]>([]);
+    useEffect(() => {
+        // ดึงข้อมูลทั้งหมดจาก /training และเก็บเฉพาะ title
+        const fetchTrainings = async () => {
+            try {
+                const response = await axios.get(`${import.meta.env.VITE_API_URL}/products`);
+                const trainingData = response.data;
 
+                const titles = trainingData.map((training: any) => training.title);
+                setTitleOptions(titles);
+            } catch (err) {
+                console.error('Error fetching training titles:', err);
+            }
+        };
 
+        fetchTrainings();
+    }, []);
     useEffect(() => {
         if (selectedLikes.length > 0) {
             fetchLikedUsers(selectedLikes);
@@ -383,11 +398,17 @@ const TableRowProducts: React.FC<TableRowProps> = ({ id, name_page }) => {
                 <Td>{id}</Td>
                 <Td>{name_page}</Td>
                 <Td>
-                    <Input
-                        placeholder="กรุณาใส่หัวข้อ"
+                <Select
+                        placeholder="เลือกทั้งหมด"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
-                    />
+                    >
+                        {titleOptions.map((titleOption, index) => (
+                            <option key={index} value={titleOption}>
+                                {titleOption}
+                            </option>
+                        ))}
+                    </Select>
                 </Td>
                 <Td>
                     <Button variant="solid" onClick={handleSearch}>
