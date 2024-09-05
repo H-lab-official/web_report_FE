@@ -20,7 +20,7 @@ function App() {
     { id: 1, log_content: 'login_page', name_page: 'หน้า LOG-IN' },
 
 
-    { id: 2, log_content: 'logout_page', name_page: 'button - LOGOUT' },
+    { id: 2, log_content: 'logout_page', name_page: 'หน้า Button - LOGOUT' },
 
   ];
   const HOME = [
@@ -272,7 +272,7 @@ function App() {
                   </Tr>
                   <Tr>
                     <Th>No.</Th>
-                    <Th>log_content </Th>
+                    <Th>log_content</Th>
                     <Th>TITLE</Th>
                     <Th>Name</Th>
                     <Th>DATE START</Th>
@@ -282,7 +282,7 @@ function App() {
                 </Thead>
 
                 <TableRowExam id={2} type='สอบ' name_page='ตารางสอบ' />
-                <TableRowExam id={2} type='อบรม' name_page='ตารางอบรม' />
+                <TableRowExam id={3} type='อบรม' name_page='ตารางอบรม' />
               </Table>
             </TableContainer>
           </TabPanel>

@@ -194,7 +194,7 @@ const TableRow: React.FC<TableRowProps> = ({ id, log_content, name_page }) => {
                 <Td>{name_page}</Td>
                 <Td>
                     <Input
-                        placeholder="กรุณาใส่ User ID (ถ้ามี)"
+                        placeholder="กรุณาใส่ AGENCY CODE"
                         value={userID}
                         onChange={(e) => setUserID(e.target.value)}
                     />

@@ -179,14 +179,14 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
                 <Td>{lablename}</Td>
                 <Td>
                     <Input
-                        placeholder="กรุณาใส่ User ID (ถ้ามี)"
+                        placeholder="กรุณาใส่ AGENCY CODE"
                         value={userID}
                         onChange={(e) => setUserID(e.target.value)}
                     />
                 </Td>
                 <Td>
                     <Input
-                        placeholder="Search by Name"
+                        placeholder="กรุณาใส่ ชื่อ (ถ้ามี)"
                         value={searchName}
                         onChange={(e) => setSearchName(e.target.value)}
                     />
