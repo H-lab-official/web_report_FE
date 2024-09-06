@@ -216,7 +216,28 @@ const LoginChart: React.FC = () => {
             },
         ],
     };
+    // Count logins per hour for the chart
+    const loginCountsByHour = filteredData.reduce((acc, log) => {
+        const hour = new Date(log.created_at).getHours(); // Get hour from 0 to 23
+        const hourString = hour.toString().padStart(2, "0") + ":00"; // Format as "00:00", "01:00", etc.
+        if (!acc[hourString]) {
+            acc[hourString] = 0;
+        }
+        acc[hourString] += 1;
+        return acc;
+    }, {} as { [hour: string]: number });
 
+    // Generate chart data for hourly login comparison
+    const hourlyChartData = {
+        labels: Array.from({ length: 24 }, (_, i) => i.toString().padStart(2, "0") + ":00"),
+        datasets: [
+            {
+                label: "Login Count by Hour",
+                data: Array.from({ length: 24 }, (_, i) => loginCountsByHour[i.toString().padStart(2, "0") + ":00"] || 0),
+                backgroundColor: "rgba(255, 159, 64, 0.6)",
+            },
+        ],
+    };
     const options = {
         responsive: true,
         plugins: {
@@ -320,6 +341,10 @@ const LoginChart: React.FC = () => {
             <div className="mt-6">
                 <h2 className="text-lg font-semibold mb-4">Login Count by Rank</h2>
                 <Bar data={rankChartData} options={options} />
+            </div>
+            <div className="mt-6">
+                <h2 className="text-lg font-semibold mb-4">Login Count by Times</h2>
+                <Bar data={hourlyChartData} options={options} />
             </div>
         </div>
     );
