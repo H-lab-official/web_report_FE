@@ -15,6 +15,7 @@ import TableRowUsersPosition from './components/TableRowUsersPosition'
 import TableRowNews from './components/TableRowNews'
 import TableRowActivitys from './components/TableRowActivitys'
 import TableRowExam from './components/TableRowEXAM'
+import LoginChart from '@/components/ChartBar'
 function App() {
   const Ones = [
     { id: 1, log_content: 'login_page', name_page: 'หน้า LOG-IN' },
@@ -102,6 +103,13 @@ function App() {
             {...normalTabStyle}
             flex="1"
             textAlign="center"
+          >Dashboard</Tab>
+          <Tab
+            _selected={selectedTabStyle}
+            _hover={hoverTabStyle}
+            {...normalTabStyle}
+            flex="1"
+            textAlign="center"
           >หน้า LOG-IN</Tab>
           <Tab
             _selected={selectedTabStyle}
@@ -147,6 +155,10 @@ function App() {
           >User</Tab> */}
         </TabList>
         <TabPanels w="100%">
+          <TabPanel>
+
+            <LoginChart />
+          </TabPanel>
           <TabPanel>
             <TableContainer>
               <Table variant='simple'>
