@@ -28,25 +28,15 @@ const LoginChart: React.FC = () => {
     const [customStartDate, setCustomStartDate] = useState<string>("");
     const [customEndDate, setCustomEndDate] = useState<string>("");
     const chartRef = useRef<HTMLDivElement | null>(null);
-    //24hr
+
     const [changeToday, setChangeToday] = useState<number>(0);
     const [changeYesterday, setChangeYesterday] = useState<number>(0);
-    //7d
-    const [last7dChange, setLast7dChange] = useState<number>(0);
-    const [beforeLast7dChange, setBeforeLast7dChange] = useState<number>(0)
-    //1M
-    const [last1mChange, setLast1mChange] = useState<number>(0);
-    const [beforeLast1mChange, setBeforeLast1mChange] = useState<number>(0)
-    //1Y
-    const [last1yChange, setLast1yChange] = useState<number>(0);
-    const [beforeLast1yChange, setBeforeLast1yChange] = useState<number>(0)
-
 
     // State for counts in each time range
     const [count24h, setCount24h] = useState<number>(0);
     const [countYesterday, setCountYesterday] = useState<number>(0);
     const [countDayBeforeYesterday, setCountDayBeforeYesterday] = useState<number>(0);
-
+    const [count7d, setCount7d] = useState<number>(0);
     const [count1m, setCount1m] = useState<number>(0);
     const [count1y, setCount1y] = useState<number>(0);
     const [countAll, setCountAll] = useState<number>(0);
@@ -62,15 +52,6 @@ const LoginChart: React.FC = () => {
         ],
     });
 
-    const [count7dBeforeLast, setCount7dBeforeLast] = useState<number>(0);
-    const [count7d, setCount7d] = useState<number>(0);
-    const [count1mBeforeLast, setCount1mBeforeLast] = useState<number>(0);
-    const [count1mLast, setCount1mLast] = useState<number>(0);
-    const [count1yBeforeLast, setCount1yBeforeLast] = useState<number>(0);
-    const [count1yLast, setCount1yLast] = useState<number>(0);
-    const [count7dBeforeBeforeLast, setCount7dBeforeBeforeLast] = useState<number>(0);
-    const [count1mBeforeBeforeLast, setCount1mBeforeBeforeLast] = useState<number>(0);
-    const [count1yBeforeBeforeLast, setCount1yBeforeBeforeLast] = useState<number>(0);
 
     useEffect(() => {
         // Fetch data when the component mounts
@@ -103,15 +84,18 @@ const LoginChart: React.FC = () => {
         const startOfToday = new Date(now);
         startOfToday.setHours(0, 0, 0, 0);
 
-        const endOfToday = new Date(now);
-        ///1
+        const endOfToday = new Date(now); // Current time of today
+
         const filtered24hData = logData.filter((log) => {
             const logDate = new Date(log.created_at);
-            return logDate >= startOfToday && logDate <= endOfToday;
+            return logDate >= startOfToday && logDate <= endOfToday; // Filter for today
         });
 
+        // นับจำนวนล็อกอินสำหรับวันนี้
         const count24h = filtered24hData.length;
-        ///2
+
+
+        // นับจำนวนล็อกอินสำหรับเมื่อวาน
         const startOfYesterday = new Date(startOfToday);
         startOfYesterday.setDate(startOfYesterday.getDate() - 1);
         const endOfYesterday = new Date(startOfYesterday);
@@ -122,6 +106,7 @@ const LoginChart: React.FC = () => {
             return logDate >= startOfYesterday && logDate <= endOfYesterday;
         }).length;
 
+        // นับจำนวนล็อกอินของวานซืน
         const startOfDayBeforeYesterday = new Date(startOfYesterday);
         startOfDayBeforeYesterday.setDate(startOfDayBeforeYesterday.getDate() - 1);
         const endOfDayBeforeYesterday = new Date(startOfDayBeforeYesterday);
@@ -132,95 +117,40 @@ const LoginChart: React.FC = () => {
             return logDate >= startOfDayBeforeYesterday && logDate <= endOfDayBeforeYesterday;
         }).length;
 
-        // คำนวณจำนวนล็อกอินย้อนหลัง 7 วัน
         const last7Days = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
-        const count7dLast = logData.filter((log) => new Date(log.created_at) >= last7Days && new Date(log.created_at) <= endOfToday).length;
+  
+        
+        const count7d = logData.filter((log) => new Date(log.created_at) >= last7Days && new Date(log.created_at) <= endOfToday).length;
 
-        const startOfBeforeLast7Days = new Date(last7Days.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const count7dBeforeLast = logData.filter((log) => new Date(log.created_at) >= startOfBeforeLast7Days && new Date(log.created_at) <= last7Days).length;
 
-        const startOfBeforeBeforeLast7Days = new Date(startOfBeforeLast7Days.getTime() - 7 * 24 * 60 * 60 * 1000);
-        const count7dBeforeBeforeLast = logData.filter((log) => new Date(log.created_at) >= startOfBeforeBeforeLast7Days && new Date(log.created_at) <= startOfBeforeLast7Days).length;
-
-        // คำนวณจำนวนล็อกอินย้อนหลัง 1 เดือน
         const last30Days = new Date(now.getTime() - 29 * 24 * 60 * 60 * 1000);
-        const startOfBeforeLast30Days = new Date(last30Days.getTime() - 30 * 24 * 60 * 60 * 1000);
-        const startOfBeforeBeforeLast30Days = new Date(startOfBeforeLast30Days.getTime() - 30 * 24 * 60 * 60 * 1000);
+        const count1m = logData.filter((log) => new Date(log.created_at) >= last30Days && new Date(log.created_at) <= endOfToday).length;
 
-        const count1mLast = logData.filter((log) => new Date(log.created_at) >= last30Days && new Date(log.created_at) <= endOfToday).length;
-        const count1mBeforeLast = logData.filter((log) => new Date(log.created_at) >= startOfBeforeLast30Days && new Date(log.created_at) <= last30Days).length;
-        const count1mBeforeBeforeLast = logData.filter((log) => new Date(log.created_at) >= startOfBeforeBeforeLast30Days && new Date(log.created_at) <= startOfBeforeLast30Days).length;
-
-        // คำนวณจำนวนล็อกอินย้อนหลัง 1 ปี
         const last365Days = new Date(now.getTime() - 364 * 24 * 60 * 60 * 1000);
-        const startOfBeforeLast365Days = new Date(last365Days.getTime() - 365 * 24 * 60 * 60 * 1000);
-        const startOfBeforeBeforeLast365Days = new Date(startOfBeforeLast365Days.getTime() - 365 * 24 * 60 * 60 * 1000);
-
-        const count1yLast = logData.filter((log) => new Date(log.created_at) >= last365Days && new Date(log.created_at) <= endOfToday).length;
-        const count1yBeforeLast = logData.filter((log) => new Date(log.created_at) >= startOfBeforeLast365Days && new Date(log.created_at) <= last365Days).length;
-        const count1yBeforeBeforeLast = logData.filter((log) => new Date(log.created_at) >= startOfBeforeBeforeLast365Days && new Date(log.created_at) <= startOfBeforeLast365Days).length;
+        const count1y = logData.filter((log) => new Date(log.created_at) >= last365Days && new Date(log.created_at) <= endOfToday).length;
 
         const countAll = logData.length;
-        // console.log('===============logData=====================');
-        // console.log(logData);
-        // console.log('================count1yLast====================');
-        // console.log(count1yLast);
-        // console.log('====================================');
+        console.log(countAll);
+        console.log(logData);
+        
+        
 
-        // คำนวณเปอร์เซ็นต์การเปลี่ยนแปลง
-        const todayChange = calculatePercentageChange(count24h, countYesterday);
-        const yesterdayChange = calculatePercentageChange(countYesterday, countDayBeforeYesterday);
-
-        const last7dChange = calculatePercentageChange(count7dLast, count7dBeforeLast);
-        const beforeLast7dChange = calculatePercentageChange(count7dBeforeLast, count7dBeforeBeforeLast);
-
-        const last1mChange = calculatePercentageChange(count1mLast, count1mBeforeLast);
-        const beforeLast1mChange = calculatePercentageChange(count1mBeforeLast, count1mBeforeBeforeLast);
-
-        const last1yChange = calculatePercentageChange(count1yLast, count1yBeforeLast);
-        const beforeLast1yChange = calculatePercentageChange(count1yBeforeLast, count1yBeforeBeforeLast);
+        const todayChange = countYesterday > 0 ? ((count24h - countYesterday) / countYesterday) * 100 : 0;
+        const yesterdayChange = countDayBeforeYesterday > 0 ? ((countYesterday - countDayBeforeYesterday) / countDayBeforeYesterday) * 100 : 0;
 
         // Set state values
         setChangeToday(todayChange);
         setChangeYesterday(yesterdayChange);
-
         setCount24h(count24h);
         setCountYesterday(countYesterday);
         setCountDayBeforeYesterday(countDayBeforeYesterday);
-        //การเปลี่ยน ของ 7 วัน
-        setLast7dChange(last7dChange)
-        setBeforeLast7dChange(beforeLast7dChange)
-
-        setCount7d(count7dLast);
-        setCount7dBeforeLast(count7dBeforeLast);
-        setCount7dBeforeBeforeLast(count7dBeforeBeforeLast);
-        // การเปลี่ยน 1 เดือน
-        setLast1mChange(last1mChange)
-        setBeforeLast1mChange(beforeLast1mChange)
-
-        setCount1m(count1mLast);
-        setCount1mBeforeLast(count1mBeforeLast);
-        setCount1mBeforeBeforeLast(count1mBeforeBeforeLast);
-
-        //การเปลี่ยน 1 ปี
-        setLast1yChange(last1yChange)
-        setBeforeLast1yChange(beforeLast1yChange)
-
-        setCount1y(count1yLast);
-        setCount1yBeforeLast(count1yBeforeLast);
-        setCount1yBeforeBeforeLast(count1yBeforeBeforeLast);
-
+        setCount7d(count7d);
+        setCount1m(count1m);
+        setCount1y(count1y);
         setCountAll(countAll);
 
         // Update filtered data for charts
         setFilteredData(filtered24hData);
-    };
-
-    const calculatePercentageChange = (currentCount: number, previousCount: number) => {
-        if (previousCount > 0) {
-            return ((currentCount - previousCount) / previousCount) * 100;
-        }
-        return 0; // ถ้า previousCount เป็น 0 จะคืนค่า 0%
     };
 
 
@@ -340,34 +270,16 @@ const LoginChart: React.FC = () => {
     };
 
     const handleExportPDF = () => {
-        const chartElements = document.querySelectorAll(".chart-section"); // เลือกทุกกราฟที่มี class เป็น chart-section
-
-        const pdf = new jsPDF("p", "mm", "a4"); // สร้างไฟล์ PDF ขนาด A4
-
-        let promises = Array.from(chartElements).map((chartElement, index) => {
-            return html2canvas(chartElement as HTMLElement).then((canvas) => {
+        const chartElement = chartRef.current;
+        if (chartElement) {
+            html2canvas(chartElement).then((canvas) => {
                 const imgData = canvas.toDataURL("image/png");
-                const imgWidth = 190; // ความกว้างของภาพใน PDF
-                const pageHeight = 295; // ความสูงของหน้า PDF
-                const imgHeight = (canvas.height * imgWidth) / canvas.width;
-                const position = 10 + index * (imgHeight + 10); // ตำแหน่ง y ที่จะเพิ่มรูป
-
-                // ถ้าอยู่ในหน้าแรก ให้เพิ่มรูปไปเรื่อยๆ
-                if (index === 0) {
-                    pdf.addImage(imgData, "PNG", 10, position, imgWidth, imgHeight);
-                } else {
-                    // สำหรับรูปที่อยู่หน้าใหม่ ให้เพิ่มหน้าใหม่แล้วเพิ่มรูป
-                    pdf.addPage();
-                    pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
-                }
+                const pdf = new jsPDF();
+                pdf.addImage(imgData, "PNG", 10, 10, 190, 100);
+                pdf.save("login_chart.pdf");
             });
-        });
-
-        Promise.all(promises).then(() => {
-            pdf.save("login_chart.pdf"); // บันทึกไฟล์ PDF เมื่อทำการจับภาพเสร็จแล้ว
-        });
+        }
     };
-
     const loginCountsByDate = filteredData.reduce((acc, log) => {
         const logDate = new Date(log.created_at).toLocaleDateString(); // Format log date as "dd/mm/yyyy"
 
@@ -377,6 +289,9 @@ const LoginChart: React.FC = () => {
         acc[logDate] += 1;
         return acc;
     }, {} as { [date: string]: number });
+    console.log('test');
+
+    console.log(loginCountsByDate);
 
 
 
@@ -470,47 +385,6 @@ const LoginChart: React.FC = () => {
             },
         ],
     };
-    // สำหรับ 7 วัน
-    const lineChartData7d = {
-        labels: ["ช่วงก่อนหน้า", "ช่วงที่ผ่านมา", "ปัจจุบัน"],
-        datasets: [
-            {
-                label: "จำนวนล็อกอิน",
-                data: [count7dBeforeBeforeLast, count7dBeforeLast, count7d],
-                borderColor: "rgba(54, 162, 235, 1)",
-                backgroundColor: "rgba(54, 162, 235, 0.2)",
-                fill: true,
-            },
-        ],
-    };
-
-    // สำหรับ 1 เดือน
-    const lineChartData1m = {
-        labels: ["ช่วงก่อนหน้า", "ช่วงที่ผ่านมา", "ปัจจุบัน"],
-        datasets: [
-            {
-                label: "จำนวนล็อกอิน",
-                data: [count1mBeforeBeforeLast, count1mBeforeLast, count1m],
-                borderColor: "rgba(153, 102, 255, 1)",
-                backgroundColor: "rgba(153, 102, 255, 0.2)",
-                fill: true,
-            },
-        ],
-    };
-
-    // สำหรับ 1 ปี
-    const lineChartData1y = {
-        labels: ["ช่วงก่อนหน้า", "ช่วงที่ผ่านมา", "ปัจจุบัน"],
-        datasets: [
-            {
-                label: "จำนวนล็อกอิน",
-                data: [count1yBeforeBeforeLast, count1yBeforeLast, count1y],
-                borderColor: "rgba(255, 159, 64, 1)",
-                backgroundColor: "rgba(255, 159, 64, 0.2)",
-                fill: true,
-            },
-        ],
-    };
 
     // Line chart options
     const lineChartOptions = {
@@ -522,8 +396,6 @@ const LoginChart: React.FC = () => {
             },
             tooltip: {
                 enabled: false,
-            }, datalabels: {
-                display: false, // ปิดการแสดงตัวเลขบนข้อมูล
             },
         },
         scales: {
@@ -542,12 +414,12 @@ const LoginChart: React.FC = () => {
             <div className=" text-white p-3 flex flex-row justify-evenly  items-center rounded-xl gap-4">
                 <div
                     onClick={() => handleTimeRangeChange("24h")}
-                    className={`px-4  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start items-center cursor-pointer ${timeRange === "24h" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    className={`px-4  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start items-center ${timeRange === "24h" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
                 >
                     <div className=" text-white p-3 flex flex-col justify-evenly  items-center rounded-xl gap-2 ">
                         {/* การแสดงข้อมูลของวันนี้ */}
                         <div className="px-4  rounded-lg font-semibold h-8 w-52 flex flex-row justify-evenly items-center  text-gray-600 gap-2">
-                            <p className="text-[14px] w-[100px]">Today ({count24h})</p>
+                            <p className="text-[14px] w-[100px]">วันปัจจุบัน ({count24h})</p>
                             <p className="flex items-center text-[14px]">
                                 {renderChangeIcon(changeToday)}
                                 <span className="ml-2">
@@ -558,7 +430,7 @@ const LoginChart: React.FC = () => {
 
                         {/* การแสดงข้อมูลของเมื่อวาน */}
                         <div className="px-4  rounded-lg font-semibold h-8 w-52 flex flex-row justify-evenly items-center  text-gray-600 gap-2">
-                            <p className="text-[14px]  w-[100px]">Yesterday ({countYesterday})</p>
+                            <p className="text-[14px]  w-[100px]">เมื่อวาน ({countYesterday})</p>
                             <p className="flex items-center text-[14px]">
                                 {renderChangeIcon(changeYesterday)}
                                 <span className="ml-2">
@@ -567,8 +439,8 @@ const LoginChart: React.FC = () => {
                             </p>
                         </div>
                         {/* กราฟแสดงข้อมูลของ 3 วัน */}
-                        <div className="font-semibold h-12 w-52 flex flex-row justify-start items-center text-gray-700 gap-2 rounded-md ">
-                            <Line data={lineChartData} options={lineChartOptions} className="px-4" />
+                        <div className="font-semibold h-12 w-52 flex flex-row justify-start items-center text-gray-700 gap-2 rounded-md border-[1px] border-gray-100">
+                            <Line data={lineChartData} options={lineChartOptions} className="px-4"/>
                         </div>
                         {/* การแสดงข้อมูลของวานซืน */}
                         {/* <div className="px-4  rounded-lg font-semibold w-52  flex-col justify-start items-center  text-gray-700 hidden">
@@ -578,111 +450,38 @@ const LoginChart: React.FC = () => {
                 </div>
                 <div
                     onClick={() => handleTimeRangeChange("7d")}
-                    className={`p-3 rounded-lg font-semibold h-40 w-52 flex cursor-pointer flex-col justify-start items-center ${timeRange === "7d" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"
-                        }`}
+                    className={`px-4  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start items-center ${timeRange === "24h" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
                 >
-
-                    <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-evenly items-center text-gray-600 gap-2">
-                        <p className="text-[0.8rem] w-[100px]">This Week ({count7d})</p>
-                        <p className="flex items-center text-[14px]">
-                            {renderChangeIcon(last7dChange)}
-                            <span className="ml-2">
-                                {Math.abs(last7dChange).toFixed(2)}%
-                            </span>
-                        </p>
-                    </div>
-                    <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-evenly items-center text-gray-600 gap-2">
-                        <p className="text-[0.8rem] w-[100px]">Last week ({count7dBeforeLast})</p>
-                        <p className="flex items-center text-[14px]">
-                            {renderChangeIcon(beforeLast7dChange)}
-                            <span className="ml-2">
-                                {Math.abs(beforeLast7dChange).toFixed(2)}%
-                            </span>
-                        </p>
-                    </div>
-                    <div className="font-semibold h-12 w-52 flex flex-row justify-start items-center text-gray-700 gap-2 rounded-md mt-3">
-                        <Line data={lineChartData7d} options={lineChartOptions} className="px-4" />
-                    </div>
+                    7 วันล่าสุด ({count7d})
+                    
                 </div>
                 <div
                     onClick={() => handleTimeRangeChange("1m")}
-                    className={`p-3  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start cursor-pointer items-center ${timeRange === "1m" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    className={`px-4  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start items-center ${timeRange === "24h" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
                 >
-
-                    <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-evenly items-center text-gray-600 gap-2">
-                        <p className="text-[0.7rem] w-[100px]">This month ({count1m})</p>
-                        <p className="flex items-center text-[14px]">
-                            {renderChangeIcon(last1mChange)}
-                            <span className="ml-2">
-                                {Math.abs(last1mChange).toFixed(2)}%
-                            </span>
-                        </p>
-                    </div>
-                    <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-evenly items-center text-gray-600 gap-2">
-                        <p className="text-[0.7rem] w-[100px]">Last month ({count1mBeforeLast})</p>
-                        <p className="flex items-center text-[14px]">
-                            {renderChangeIcon(beforeLast1mChange)}
-                            <span className="ml-2">
-                                {Math.abs(beforeLast1mChange).toFixed(2)}%
-                            </span>
-                        </p>
-                    </div>
-                    <div className="font-semibold h-12 w-52 flex flex-row justify-start items-center text-gray-700 gap-2 rounded-md mt-4">
-                        <Line data={lineChartData1m} options={lineChartOptions} className="px-4" />
-                    </div>
+                    1 เดือนล่าสุด ({count1m})
                 </div>
                 <div
                     onClick={() => handleTimeRangeChange("1y")}
-                    className={`p-3  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start cursor-pointer items-center ${timeRange === "1y" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    className={`px-4  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start items-center ${timeRange === "24h" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
                 >
-
-                    <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-evenly items-center text-gray-600 gap-2">
-                        <p className="text-[0.7rem] w-[100px]">This years ({count1y})</p>
-                        <p className="flex items-center text-[14px]">
-                            {renderChangeIcon(last1yChange)}
-                            <span className="ml-2">
-                                {Math.abs(last1yChange).toFixed(2)}%
-                            </span>
-                        </p>
-                    </div>
-                    <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-evenly items-center text-gray-600 gap-2">
-                        <p className="text-[0.7rem] w-[100px]">This years ({count1yBeforeLast})</p>
-                        <p className="flex items-center text-[14px]">
-                            {renderChangeIcon(beforeLast1yChange)}
-                            <span className="ml-2">
-                                {Math.abs(beforeLast1yChange).toFixed(2)}%
-                            </span>
-                        </p>
-                    </div>
-                    <div className="font-semibold h-12 w-52 flex flex-row justify-start items-center text-gray-700 gap-2 rounded-md mt-3">
-                        <Line data={lineChartData1y} options={lineChartOptions} className="px-4" />
-                    </div>
+                    1 ปีล่าสุด ({count1y})
                 </div>
-                {/* <div
+                <div
                     onClick={() => handleTimeRangeChange("all")}
-                    className={`p-3  rounded-lg font-semibold h-40 w-52 flex flex-col justify-center cursor-pointer items-center ${timeRange === "all" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    className={`px-4  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start items-center ${timeRange === "24h" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
                 >
-                  
-                    <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-center items-center  text-gray-600 ">
-                        <p className="text-[0.9rem] w-full flex justify-center">All Data</p>
-
-                    </div>
-                </div> */}
+                    ทั้งหมด ({countAll})
+                </div>
                 <div
                     onClick={() => handleTimeRangeChange("custom")}
-                    className={`p-3  rounded-lg font-semibold h-40 w-52 flex flex-col justify-center cursor-pointer items-center ${timeRange === "custom" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    className={`px-4  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start items-center ${timeRange === "24h" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
                 >
-                    <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-center items-center   text-gray-600 ">
-                        {timeRange === "custom" ? ` กำหนดเอง (${totalCount})` : "กำหนดเอง"}
-                    </div>
-
+                    กำหนดเอง ({totalCount})
                 </div>
 
-                <div onClick={handleExportPDF} className={`px-4  rounded-lg font-semibold h-40 w-52 flex flex-col cursor-pointer justify-center items-center  bg-white text-gray-600 `}>
-                    <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-center items-center   text-gray-600 ">
-                        Export to PDF
-                    </div>
-
+                <div onClick={handleExportPDF} className={`px-4  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start items-center border-2 border-gray-400 bg-white text-gray-600 `}>
+                    Export to PDF
                 </div>
             </div>
 
@@ -703,32 +502,32 @@ const LoginChart: React.FC = () => {
                     <button onClick={() => handleTimeRangeChange("custom")}>กรองข้อมูล</button>
                 </div>
             )}
-            <div className=" grid grid-cols-2 gap-4">
-                <div className="chart-section mt-6">
+            <div className="grid grid-cols-2 gap-4">
+                <div ref={chartRef} className="mt-6">
                     <h2 className="text-lg font-semibold mb-4">Login Count by Date</h2>
                     <Bar data={chartData} options={options} />
                 </div>
 
                 {/* Login Count by Role */}
-                <div className="chart-section mt-6">
+                <div className="mt-6">
                     <h2 className="text-lg font-semibold mb-4">Login Count by Role</h2>
                     <Bar data={roleChartData} options={options} />
                 </div>
 
                 {/* Login Count by Rank */}
-                <div className="chart-section mt-6">
+                <div className="mt-6">
                     <h2 className="text-lg font-semibold mb-4">Login Count by Rank</h2>
                     <Bar data={rankChartData} options={options} />
                 </div>
-
-                <div className="chart-section mt-6">
+                <div className="mt-6">
                     <h2 className="text-lg font-semibold mb-4">Login Count by Times</h2>
                     <Bar data={hourlyChartData} options={options} />
                 </div>
-
             </div>
         </div>
     );
 };
 
 export default LoginChart;
+ช่วยเหมือน 24hr ในช่วยของ ช่วงเวลาอื่นๆ เช่น 7d ก็ทำย้อนหลัง ไป 3 ช่วงเวลา(รวมปัจจุบันด้วย)
+ทำ 1 m 1y ด้วย
