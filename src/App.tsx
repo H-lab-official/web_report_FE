@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { Box, Text, Table, Thead, Tbody, Tfoot, Tr, Th, TableCaption, TableContainer, Img, Flex, Td, Select } from '@chakra-ui/react';
 import TableRow from './components/TableRow';
 import TableRowUsers from './components/TableRowUsers';
-import TableRowContentPopup from './components/TableRowContentPopup'
+
 import ContentPopupTable from './components/ContentPopupTable'
 import TableRowGoal from './components/TableRowGoal'
-import NavBar from './components/navnar';
+
 import { Tabs, TabList, TabPanels, Tab, TabPanel, Image } from '@chakra-ui/react'
 import Logo from './assets/images/LOGO.png'
 import { selectedTabStyle, hoverTabStyle, normalTabStyle } from './components/css/stypeall'
@@ -15,12 +15,7 @@ import TableRowUsersPosition from './components/TableRowUsersPosition'
 import TableRowNews from './components/TableRowNews'
 import TableRowActivitys from './components/TableRowActivitys'
 import TableRowExam from './components/TableRowEXAM'
-import LoginChart from '@/components/ChartBarLogin'
-import Top20Chart from '@/components/ChartBarTop20'
-import MenuChart from '@/components/ChartBarMenu'
-import IconChart from '@/components/ChartBarTop20Icon'
-import ButtonChart from '@/components/ChartBarTop20Button'
-import LoginAndLogoutChart from '@/components/ChartBarLoginAndLogout'
+
 import Bar from '@/components/Bar'
 function App() {
   const Ones = [
