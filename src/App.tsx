@@ -21,7 +21,7 @@ import MenuChart from '@/components/ChartBarMenu'
 import IconChart from '@/components/ChartBarTop20Icon'
 import ButtonChart from '@/components/ChartBarTop20Button'
 import LoginAndLogoutChart from '@/components/ChartBarLoginAndLogout'
-import Bar from './components/bar';
+import Bar from '@/components/Bar'
 function App() {
   const Ones = [
     { id: 1, log_content: 'login_page', name_page: 'หน้า LOG-IN' },
