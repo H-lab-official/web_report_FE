@@ -6,7 +6,9 @@ import axios from "axios";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
 import { FaArrowUp, FaArrowDown } from 'react-icons/fa';
-
+import 'animate.css'
+import DatePicker from "react-datepicker"; // ใช้ DatePicker
+import "react-datepicker/dist/react-datepicker.css"; // นำเข้า CSS ของ react-datepicker
 // Register the plugin
 Chart.register(CategoryScale, BarElement, LinearScale, Tooltip, Legend, ChartDataLabels, PointElement, LineElement);
 
@@ -25,8 +27,8 @@ const LoginChart: React.FC = () => {
     const [timeRange, setTimeRange] = useState<string>("24h");
     const [logData, setLogData] = useState<LogData[]>([]);
     const [filteredData, setFilteredData] = useState<LogData[]>([]);
-    const [customStartDate, setCustomStartDate] = useState<string>("");
-    const [customEndDate, setCustomEndDate] = useState<string>("");
+    const [customStartDate, setCustomStartDate] = useState<Date | null>(null);
+    const [customEndDate, setCustomEndDate] = useState<Date | null>(null);
     const chartRef = useRef<HTMLDivElement | null>(null);
     //24hr
     const [changeToday, setChangeToday] = useState<number>(0);
@@ -160,12 +162,7 @@ const LoginChart: React.FC = () => {
         const count1yBeforeLast = logData.filter((log) => new Date(log.created_at) >= startOfBeforeLast365Days && new Date(log.created_at) <= last365Days).length;
         const count1yBeforeBeforeLast = logData.filter((log) => new Date(log.created_at) >= startOfBeforeBeforeLast365Days && new Date(log.created_at) <= startOfBeforeLast365Days).length;
 
-        const countAll = logData.length;
-        // console.log('===============logData=====================');
-        // console.log(logData);
-        // console.log('================count1yLast====================');
-        // console.log(count1yLast);
-        // console.log('====================================');
+
 
         // คำนวณเปอร์เซ็นต์การเปลี่ยนแปลง
         const todayChange = calculatePercentageChange(count24h, countYesterday);
@@ -214,6 +211,207 @@ const LoginChart: React.FC = () => {
 
         // Update filtered data for charts
         setFilteredData(filtered24hData);
+    };
+    // const calculateCounts = () => {
+    //     const now = new Date();
+    //     const startOfToday = new Date(now);
+    //     startOfToday.setHours(0, 0, 0, 0);
+
+    //     const endOfToday = new Date(now);
+
+    //     /// 1 - 24 ชั่วโมง
+    //     const filtered24hData = logData.filter((log) => {
+    //         const logDate = convertToGMT7(log.created_at);
+    //         return logDate >= startOfToday && logDate <= endOfToday;
+    //     });
+    //     console.log('================iltered24hData====================');
+    //     console.log(filtered24hData);
+    //     console.log('====================================');
+    //     const count24h = filtered24hData.length;
+
+    //     // เมื่อวาน
+    //     const startOfYesterday = new Date(startOfToday);
+    //     startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+    //     const endOfYesterday = new Date(startOfYesterday);
+    //     endOfYesterday.setHours(23, 59, 59, 999);
+
+    //     const countYesterdaydata = logData.filter((log) => {
+    //         const logDate = convertToGMT7(log.created_at);
+    //         return logDate >= startOfYesterday && logDate <= endOfYesterday;
+    //     })
+    //     const countYesterday = countYesterdaydata.length
+    //     console.log('====================================');
+    //     console.log(countYesterdaydata);
+    //     console.log('====================================');
+    //     // วันก่อนหน้า
+    //     const startOfDayBeforeYesterday = new Date(startOfYesterday);
+    //     startOfDayBeforeYesterday.setDate(startOfDayBeforeYesterday.getDate() - 1);
+    //     const endOfDayBeforeYesterday = new Date(startOfDayBeforeYesterday);
+    //     endOfDayBeforeYesterday.setHours(23, 59, 59, 999);
+
+    //     const countDayBeforeYesterdayData = logData.filter((log) => {
+    //         const logDate = convertToGMT7(log.created_at);
+    //         return logDate >= startOfDayBeforeYesterday && logDate <= endOfDayBeforeYesterday;
+    //     })
+    //     const countDayBeforeYesterday = countDayBeforeYesterdayData.length
+    //     console.log('====================================');
+    //     console.log(countDayBeforeYesterdayData);
+    //     console.log('====================================');
+    //     // 1 สัปดาห์ย้อนหลัง (เริ่มจากวันจันทร์ - วันอาทิตย์)
+    //     const getMonday = (d: any) => {
+    //         const date = new Date(d);
+    //         const day = date.getDay();
+    //         const diff = date.getDate() - day + (day === 0 ? -6 : 1); // ถ้าวันอาทิตย์ ให้เริ่มนับเป็นวันจันทร์
+    //         return new Date(date.setDate(diff));
+    //     };
+
+    //     const mondayThisWeek = getMonday(now);
+    //     const sundayThisWeek = new Date(mondayThisWeek);
+    //     sundayThisWeek.setDate(sundayThisWeek.getDate() + 6);
+    //     sundayThisWeek.setHours(23, 59, 59, 999);
+
+    //     const startOfLastWeek = new Date(mondayThisWeek);
+    //     startOfLastWeek.setDate(startOfLastWeek.getDate() - 7);
+    //     const endOfLastWeek = new Date(startOfLastWeek);
+    //     endOfLastWeek.setDate(endOfLastWeek.getDate() + 6);
+    //     endOfLastWeek.setHours(23, 59, 59, 999);
+
+    //     const startOfWeekBeforeLast = new Date(startOfLastWeek);
+    //     startOfWeekBeforeLast.setDate(startOfWeekBeforeLast.getDate() - 7);
+    //     const endOfWeekBeforeLast = new Date(startOfWeekBeforeLast);
+    //     endOfWeekBeforeLast.setDate(endOfWeekBeforeLast.getDate() + 6);
+    //     endOfWeekBeforeLast.setHours(23, 59, 59, 999);
+
+    //     const count7dLast = logData.filter((log) => {
+    //         const logDate = convertToGMT7(log.created_at);
+    //         return logDate >= mondayThisWeek && logDate <= sundayThisWeek;
+    //     }).length;
+
+    //     const count7dBeforeLast = logData.filter((log) => {
+    //         const logDate = convertToGMT7(log.created_at);
+    //         return logDate >= startOfLastWeek && logDate <= endOfLastWeek;
+    //     }).length;
+
+    //     const count7dBeforeBeforeLast = logData.filter((log) => {
+    //         const logDate = convertToGMT7(log.created_at);
+    //         return logDate >= startOfWeekBeforeLast && logDate <= endOfWeekBeforeLast;
+    //     }).length;
+
+    //     // 1 เดือนย้อนหลัง (เริ่มจากวันที่ 1 - วันสุดท้ายของเดือน)
+    //     const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    //     const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    //     endOfThisMonth.setHours(23, 59, 59, 999);
+
+    //     const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    //     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+    //     endOfLastMonth.setHours(23, 59, 59, 999);
+
+    //     const startOfMonthBeforeLast = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    //     const endOfMonthBeforeLast = new Date(now.getFullYear(), now.getMonth() - 1, 0);
+    //     endOfMonthBeforeLast.setHours(23, 59, 59, 999);
+
+    //     const count1mLast = logData.filter((log) => {
+    //         const logDate = new Date(log.created_at);
+    //         return logDate >= startOfThisMonth && logDate <= endOfThisMonth;
+    //     }).length;
+
+    //     const count1mBeforeLast = logData.filter((log) => {
+    //         const logDate = new Date(log.created_at);
+    //         return logDate >= startOfLastMonth && logDate <= endOfLastMonth;
+    //     }).length;
+
+    //     const count1mBeforeBeforeLast = logData.filter((log) => {
+    //         const logDate = new Date(log.created_at);
+    //         return logDate >= startOfMonthBeforeLast && logDate <= endOfMonthBeforeLast;
+    //     }).length;
+
+    //     // 1 ปีย้อนหลัง (เริ่มจากวันที่ 1 ม.ค. ถึง 31 ธ.ค.)
+    //     const startOfThisYear = new Date(now.getFullYear(), 0, 1);
+    //     const endOfThisYear = new Date(now.getFullYear(), 11, 31);
+    //     endOfThisYear.setHours(23, 59, 59, 999);
+
+    //     const startOfLastYear = new Date(now.getFullYear() - 1, 0, 1);
+    //     const endOfLastYear = new Date(now.getFullYear() - 1, 11, 31);
+    //     endOfLastYear.setHours(23, 59, 59, 999);
+
+    //     const startOfYearBeforeLast = new Date(now.getFullYear() - 2, 0, 1);
+    //     const endOfYearBeforeLast = new Date(now.getFullYear() - 2, 11, 31);
+    //     endOfYearBeforeLast.setHours(23, 59, 59, 999);
+
+    //     const count1yLast = logData.filter((log) => {
+    //         const logDate = new Date(log.created_at);
+    //         return logDate >= startOfThisYear && logDate <= endOfThisYear;
+    //     }).length;
+
+    //     const count1yBeforeLast = logData.filter((log) => {
+    //         const logDate = new Date(log.created_at);
+    //         return logDate >= startOfLastYear && logDate <= endOfLastYear;
+    //     }).length;
+
+    //     const count1yBeforeBeforeLast = logData.filter((log) => {
+    //         const logDate = new Date(log.created_at);
+    //         return logDate >= startOfYearBeforeLast && logDate <= endOfYearBeforeLast;
+    //     }).length;
+
+    //     // คำนวณเปอร์เซ็นต์การเปลี่ยนแปลง
+    //     const todayChange = calculatePercentageChange(count24h, countYesterday);
+    //     const yesterdayChange = calculatePercentageChange(countYesterday, countDayBeforeYesterday);
+
+    //     const last7dChange = calculatePercentageChange(count7dLast, count7dBeforeLast);
+    //     const beforeLast7dChange = calculatePercentageChange(count7dBeforeLast, count7dBeforeBeforeLast);
+
+    //     const last1mChange = calculatePercentageChange(count1mLast, count1mBeforeLast);
+    //     const beforeLast1mChange = calculatePercentageChange(count1mBeforeLast, count1mBeforeBeforeLast);
+
+    //     const last1yChange = calculatePercentageChange(count1yLast, count1yBeforeLast);
+    //     const beforeLast1yChange = calculatePercentageChange(count1yBeforeLast, count1yBeforeBeforeLast);
+
+    //     // Set state values
+    //     setChangeToday(todayChange);
+    //     setChangeYesterday(yesterdayChange);
+
+    //     setCount24h(count24h);
+    //     setCountYesterday(countYesterday);
+    //     setCountDayBeforeYesterday(countDayBeforeYesterday);
+
+    //     // การเปลี่ยนแปลง 7 วัน
+    //     setLast7dChange(last7dChange);
+    //     setBeforeLast7dChange(beforeLast7dChange);
+
+    //     setCount7d(count7dLast);
+    //     setCount7dBeforeLast(count7dBeforeLast);
+    //     setCount7dBeforeBeforeLast(count7dBeforeBeforeLast);
+
+    //     // การเปลี่ยนแปลง 1 เดือน
+    //     setLast1mChange(last1mChange);
+    //     setBeforeLast1mChange(beforeLast1mChange);
+
+    //     setCount1m(count1mLast);
+    //     setCount1mBeforeLast(count1mBeforeLast);
+    //     setCount1mBeforeBeforeLast(count1mBeforeBeforeLast);
+
+    //     // การเปลี่ยนแปลง 1 ปี
+    //     setLast1yChange(last1yChange);
+    //     setBeforeLast1yChange(beforeLast1yChange);
+
+    //     setCount1y(count1yLast);
+    //     setCount1yBeforeLast(count1yBeforeLast);
+    //     setCount1yBeforeBeforeLast(count1yBeforeBeforeLast);
+
+    //     setCountAll(logData.length);
+
+    //     // Update filtered data for charts
+    //     setFilteredData(filtered24hData);
+    // };
+
+    const convertToGMT7 = (utcDateString: any) => {
+        // สร้าง Date จาก string ที่ได้
+        const date = new Date(utcDateString);
+
+        // เพิ่ม 7 ชั่วโมงเพื่อแปลงเป็นเวลา GMT+7
+        date.setHours(date.getHours() + 7);
+
+        return date;
     };
 
     const calculatePercentageChange = (currentCount: number, previousCount: number) => {
@@ -284,13 +482,15 @@ const LoginChart: React.FC = () => {
                 }
 
                 case "custom": {
-                    const start = new Date(customStartDate);
-                    const end = new Date(customEndDate);
-                    end.setHours(23, 59, 59, 999); // กำหนดเวลาสิ้นสุดของวันนั้นให้เป็น 23:59:59
-                    filtered = logData.filter((log) => {
-                        const logDate = new Date(log.created_at);
-                        return logDate >= start && logDate <= end;
-                    });
+                    if (customStartDate && customEndDate) {
+                        const start = new Date(customStartDate);
+                        const end = new Date(customEndDate);
+                        end.setHours(23, 59, 59, 999);
+                        filtered = logData.filter((log) => {
+                            const logDate = new Date(log.created_at);
+                            return logDate >= start && logDate <= end;
+                        });
+                    }
                     break;
                 }
 
@@ -542,7 +742,8 @@ const LoginChart: React.FC = () => {
             <div className=" text-white p-3 flex flex-row justify-evenly  items-center rounded-xl gap-4">
                 <div
                     onClick={() => handleTimeRangeChange("24h")}
-                    className={`px-4  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start items-center cursor-pointer ${timeRange === "24h" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    className={`animate__animated animate__fadeInUp  px-4  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start items-center cursor-pointer ${timeRange === "24h" ? "border-2 border-[#4bc0c0] bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    style={{ animationDuration: "0.7s", animationDelay: "0s" }}
                 >
                     <div className=" text-white p-3 flex flex-col justify-evenly  items-center rounded-xl gap-2 ">
                         {/* การแสดงข้อมูลของวันนี้ */}
@@ -578,8 +779,9 @@ const LoginChart: React.FC = () => {
                 </div>
                 <div
                     onClick={() => handleTimeRangeChange("7d")}
-                    className={`p-3 rounded-lg font-semibold h-40 w-52 flex cursor-pointer flex-col justify-start items-center ${timeRange === "7d" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"
+                    className={`animate__animated animate__fadeInUp  p-3 rounded-lg font-semibold h-40 w-52 flex cursor-pointer flex-col justify-start items-center ${timeRange === "7d" ? "border-2 border-[#36a2eb] bg-white text-gray-600" : "bg-white text-gray-600"
                         }`}
+                    style={{ animationDuration: "0.7s", animationDelay: "0.6s" }}
                 >
 
                     <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-evenly items-center text-gray-600 gap-2">
@@ -606,7 +808,8 @@ const LoginChart: React.FC = () => {
                 </div>
                 <div
                     onClick={() => handleTimeRangeChange("1m")}
-                    className={`p-3  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start cursor-pointer items-center ${timeRange === "1m" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    className={`animate__animated animate__fadeInUp p-3  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start cursor-pointer items-center ${timeRange === "1m" ? "border-2 border-[#9966ff] bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    style={{ animationDuration: "0.7s", animationDelay: "1.2s" }}
                 >
 
                     <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-evenly items-center text-gray-600 gap-2">
@@ -625,6 +828,7 @@ const LoginChart: React.FC = () => {
                             <span className="ml-2">
                                 {Math.abs(beforeLast1mChange).toFixed(2)}%
                             </span>
+
                         </p>
                     </div>
                     <div className="font-semibold h-12 w-52 flex flex-row justify-start items-center text-gray-700 gap-2 rounded-md mt-4">
@@ -633,7 +837,8 @@ const LoginChart: React.FC = () => {
                 </div>
                 <div
                     onClick={() => handleTimeRangeChange("1y")}
-                    className={`p-3  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start cursor-pointer items-center ${timeRange === "1y" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    className={`animate__animated animate__fadeInUp p-3  rounded-lg font-semibold h-40 w-52 flex flex-col justify-start cursor-pointer items-center ${timeRange === "1y" ? "border-2 border-[#ff9f40] bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    style={{ animationDuration: "0.7s", animationDelay: "1.8s" }}
                 >
 
                     <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-evenly items-center text-gray-600 gap-2">
@@ -670,7 +875,8 @@ const LoginChart: React.FC = () => {
                 </div> */}
                 <div
                     onClick={() => handleTimeRangeChange("custom")}
-                    className={`p-3  rounded-lg font-semibold h-40 w-52 flex flex-col justify-center cursor-pointer items-center ${timeRange === "custom" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    className={`animate__animated animate__fadeInUp p-3  rounded-lg font-semibold h-40 w-52 flex flex-col justify-center cursor-pointer items-center ${timeRange === "custom" ? "border-2 border-gray-400 bg-white text-gray-600" : "bg-white text-gray-600"}`}
+                    style={{ animationDuration: "0.7s", animationDelay: "2.4s" }}
                 >
                     <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-center items-center   text-gray-600 ">
                         {timeRange === "custom" ? ` กำหนดเอง (${totalCount})` : "กำหนดเอง"}
@@ -678,7 +884,7 @@ const LoginChart: React.FC = () => {
 
                 </div>
 
-                <div onClick={handleExportPDF} className={`px-4  rounded-lg font-semibold h-40 w-52 flex flex-col cursor-pointer justify-center items-center  bg-white text-gray-600 `}>
+                <div onClick={handleExportPDF} style={{ animationDuration: "0.7s", animationDelay: "3.2s" }} className={`animate__animated animate__fadeInUp px-4  rounded-lg font-semibold h-40 w-52 flex flex-col cursor-pointer justify-center items-center  bg-white text-gray-600 `}>
                     <div className="p-3 rounded-lg font-semibold h-8 w-52 flex flex-row justify-center items-center   text-gray-600 ">
                         Export to PDF
                     </div>
@@ -689,40 +895,41 @@ const LoginChart: React.FC = () => {
             {timeRange === "custom" && (
                 <div className="bg-slate-200 p-3 flex flex-row justify-end items-center gap-5 rounded-lg">
                     <label>วันเริ่มต้น:</label>
-                    <input
-                        type="date"
-                        value={customStartDate}
-                        onChange={(e) => setCustomStartDate(e.target.value)}
+                    <DatePicker
+                        selected={customStartDate}
+                        onChange={(date: Date | null) => setCustomStartDate(date)}
+                        dateFormat="dd/MM/yyyy"
                     />
                     <label>วันสิ้นสุด:</label>
-                    <input
-                        type="date"
-                        value={customEndDate}
-                        onChange={(e) => setCustomEndDate(e.target.value)}
+                    <DatePicker
+                        selected={customEndDate}
+                        onChange={(date: Date | null) => setCustomEndDate(date)}
+                        dateFormat="dd/MM/yyyy"
+                        minDate={customStartDate || undefined}
                     />
                     <button onClick={() => handleTimeRangeChange("custom")}>กรองข้อมูล</button>
                 </div>
             )}
             <div className=" grid grid-cols-2 gap-4">
                 <div className="chart-section mt-6">
-                    <h2 className="text-lg font-semibold mb-4">Login Count by Date</h2>
+                    <h2 className="text-lg font-semibold mb-4">จำนวนคนที่เข้าระบบ (แยกตามวันที่)</h2>
                     <Bar data={chartData} options={options} />
                 </div>
 
                 {/* Login Count by Role */}
                 <div className="chart-section mt-6">
-                    <h2 className="text-lg font-semibold mb-4">Login Count by Role</h2>
+                    <h2 className="text-lg font-semibold mb-4">จำนวนคนที่เข้าระบบ (แยกตาม Role)</h2>
                     <Bar data={roleChartData} options={options} />
                 </div>
 
                 {/* Login Count by Rank */}
                 <div className="chart-section mt-6">
-                    <h2 className="text-lg font-semibold mb-4">Login Count by Rank</h2>
+                    <h2 className="text-lg font-semibold mb-4">จำนวนคนที่เข้าระบบ (แยกตาม ตำแหน่ง(Staff จะรวม staff ,admin ,super-admin))</h2>
                     <Bar data={rankChartData} options={options} />
                 </div>
 
                 <div className="chart-section mt-6">
-                    <h2 className="text-lg font-semibold mb-4">Login Count by Times</h2>
+                    <h2 className="text-lg font-semibold mb-4">จำนวนคนที่เข้าระบบ (แยกตาม ช่วงเวลา)</h2>
                     <Bar data={hourlyChartData} options={options} />
                 </div>
 

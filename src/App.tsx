@@ -15,13 +15,19 @@ import TableRowUsersPosition from './components/TableRowUsersPosition'
 import TableRowNews from './components/TableRowNews'
 import TableRowActivitys from './components/TableRowActivitys'
 import TableRowExam from './components/TableRowEXAM'
-import LoginChart from '@/components/ChartBar'
+import LoginChart from '@/components/ChartBarLogin'
+import Top20Chart from '@/components/ChartBarTop20'
+import MenuChart from '@/components/ChartBarMenu'
+import IconChart from '@/components/ChartBarTop20Icon'
+import ButtonChart from '@/components/ChartBarTop20Button'
+import LoginAndLogoutChart from '@/components/ChartBarLoginAndLogout'
+import Bar from './components/bar';
 function App() {
   const Ones = [
     { id: 1, log_content: 'login_page', name_page: 'หน้า LOG-IN' },
 
 
-    { id: 2, log_content: 'logout_page', name_page: 'หน้า Button - LOGOUT' },
+    { id: 2, log_content: 'logout_page', name_page: 'หน้า LOG-OUT' },
 
   ];
   const HOME = [
@@ -156,8 +162,13 @@ function App() {
         </TabList>
         <TabPanels w="100%">
           <TabPanel>
-
-            <LoginChart />
+            <Bar />
+            {/* <LoginAndLogoutChart/>
+            <ButtonChart />
+            <IconChart />
+            <MenuChart />
+            <Top20Chart /> */}
+            {/* <LoginChart /> */}
           </TabPanel>
           <TabPanel>
             <TableContainer>
