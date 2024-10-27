@@ -277,144 +277,150 @@ const TableRowExam: React.FC<TableRowProps> = ({ id, type, name_page }) => {
         NProgress.done();
     };
 
-    const exportToExcel = async () => {
-
-        const fetchUserDetailsForExport = async (userIds: string[]) => {
-            try {
-                const responses = await Promise.all(
-                    userIds.map(userId =>
-                        axios.get(`${import.meta.env.VITE_API_URL}/users`, { params: { user_id: userId } })
-                    )
-                );
-
-                const userMap: { [key: string]: string } = {};
-                responses.forEach((response) => {
-                    if (response.data.length > 0) {
-                        const user = response.data[0];
-                        userMap[user.id] = user.name;
-                    }
-                });
-                return userMap;
-            } catch (error) {
-                console.error('Error fetching user details:', error);
-                return {};
-            }
-        };
-        const likedUsersMap = await fetchUserDetailsForExport(
-            logs.flatMap(log => JSON.parse(log.user_like || '[]'))
-        );
-        const dislikedUsersMap = await fetchUserDetailsForExport(
-            logs.flatMap(log => JSON.parse(log.user_dislike || '[]'))
-        );
-        const sharedUsersMap = await fetchUserDetailsForExport(
-            logs.flatMap(log => Object.keys(JSON.parse(log.user_share || '{}')))
-        );
-        const favUsersMap = await fetchUserDetailsForExport(
-            logs.flatMap(log => Object.keys(JSON.parse(log.user_fav || '{}')))
-        );
-        const viewedUsersMap = await fetchUserDetailsForExport(
-            logs.flatMap(log => Object.keys(JSON.parse(log.user_view || '{}')))
-        );
-
-        const createUserSheet = (
-            logs: any[],
-            key: string,
-            parseFunc: (data: any, log: any, userMap: { [key: string]: string }) => any[],
-            userMap: { [key: string]: string }
-        ) => {
-            const userLogs = logs.flatMap(log => {
-                const parsedData = log[key] ? parseFunc(JSON.parse(log[key]), log, userMap) : [];
-                return parsedData.map((item: any, index: number) => ({
-                    Log_No: startIndex + index + 1,
-                    ...item
-                }));
-            });
-            return XLSX.utils.json_to_sheet(userLogs);
-        };
-
-
-        const parseLikesDislikes = (data: string[], log: any, userMap: { [key: string]: string }) =>
-            data.map(userId => ({
-                Name: userMap[userId] || 'Unknown',
-            }));
-
-
-        const parseShares = (data: any, log: any, userMap: { [key: string]: string }) => {
-            const shares = [];
-            for (const userId in data) {
-                for (const shareId in data[userId]) {
-                    const share = data[userId][shareId];
-                    shares.push({
-                        Name: userMap[userId] || 'Unknown',
-                        Time: share.datetime,
-                        Social: share.social
-                    });
-                }
-            }
-            return shares;
-        };
-        interface FavData {
-            status: string;
-            datetime: string;
-        }
-        const parseFavs = (data: any, log: any, userMap: { [key: string]: string }) =>
-            Object.entries(data).map(([userId, favData]) => {
-                const fav = favData as FavData;
-                return {
-                    Name: userMap[userId] || 'Unknown',
-                    Status: fav.status,
-                    Time: fav.datetime
-                };
-            });
-        interface ViewData {
-            [key: string]: { datetime: string };
-        }
-        const parseViews = (data: any, log: any, userMap: { [key: string]: string }) =>
-            Object.entries(data).map(([userId, viewData]) => {
-                const views = viewData as ViewData;
-                return {
-                    Name: userMap[userId] || 'Unknown',
-                    View_Count: Object.keys(views).length,
-                    Last_View: views[Object.keys(views).pop()!].datetime
-                };
-            });
-        const stripHtmlTags = (html: string): string => {
-            const doc = new DOMParser().parseFromString(html, 'text/html');
-            return doc.body.textContent || "";
-        };
-
-        const logsSheet = XLSX.utils.json_to_sheet(logs.map((log, index) => ({
-            No: startIndex + index + 1,
-            title: log.title,
-            date_start: log.date_start,
-            date_end: log.date_end,
-            created_at: log.created_at,
-            user_like: log.user_like ? JSON.parse(log.user_like).length : 0,
-            user_dislike: log.user_dislike ? JSON.parse(log.user_dislike).length : 0,
-            user_share: log.user_share ? Object.keys(JSON.parse(log.user_share)).length : 0,
-            user_fav: log.user_fav ? Object.keys(JSON.parse(log.user_fav)).length : 0,
-            user_view: log.user_view ? Object.keys(JSON.parse(log.user_view)).length : 0,
-            log_rating: log.log_rating,
-            location_detail: stripHtmlTags(log.location_detail),
-            link_map: log.link_map,
-            link_out: log.link_out,
-        })));
-        const userLikesSheet = createUserSheet(logs, 'user_like', parseLikesDislikes, likedUsersMap);
-        const userDislikesSheet = createUserSheet(logs, 'user_dislike', parseLikesDislikes, dislikedUsersMap);
-        const userSharesSheet = createUserSheet(logs, 'user_share', parseShares, sharedUsersMap);
-        const userFavsSheet = createUserSheet(logs, 'user_fav', parseFavs, favUsersMap);
-        const userViewsSheet = createUserSheet(logs, 'user_view', parseViews, viewedUsersMap);
-        const wb = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(wb, logsSheet, "Logs");
-        XLSX.utils.book_append_sheet(wb, userLikesSheet, "User Likes");
-        XLSX.utils.book_append_sheet(wb, userDislikesSheet, "User Dislikes");
-        XLSX.utils.book_append_sheet(wb, userSharesSheet, "User Shares");
-        XLSX.utils.book_append_sheet(wb, userFavsSheet, "User Favs");
-        XLSX.utils.book_append_sheet(wb, userViewsSheet, "User Views");
-        const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-        const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-        saveAs(data, name_page === 'ตารางสอบ' ? "logsExam.xlsx" : "logsTraining.xlsx");
-    };
+    const safeObjectKeys = (obj: any) => {
+        return obj ? Object.keys(obj) : [];
+      };
+      
+      const exportToExcel = async () => {
+          const fetchUserDetailsForExport = async (userIds: string[]) => {
+              try {
+                  const responses = await Promise.all(
+                      userIds.map(userId =>
+                          axios.get(`${import.meta.env.VITE_API_URL}/users`, { params: { user_id: userId } })
+                      )
+                  );
+      
+                  const userMap: { [key: string]: string } = {};
+                  responses.forEach((response) => {
+                      if (response.data.length > 0) {
+                          const user = response.data[0];
+                          userMap[user.id] = user.name;
+                      }
+                  });
+                  return userMap;
+              } catch (error) {
+                  console.error('Error fetching user details:', error);
+                  return {};
+              }
+          };
+      
+          const safeJsonParse = (data: string, fallback: any) => {
+              try {
+                  return JSON.parse(data);
+              } catch {
+                  return fallback;
+              }
+          };
+      
+          const likedUsersMap = await fetchUserDetailsForExport(
+              logs.flatMap(log => safeJsonParse(log.user_like, []))
+          );
+          const dislikedUsersMap = await fetchUserDetailsForExport(
+              logs.flatMap(log => safeJsonParse(log.user_dislike, []))
+          );
+          const sharedUsersMap = await fetchUserDetailsForExport(
+              logs.flatMap(log => safeObjectKeys(safeJsonParse(log.user_share, {})))
+          );
+          const favUsersMap = await fetchUserDetailsForExport(
+              logs.flatMap(log => safeObjectKeys(safeJsonParse(log.user_fav, {})))
+          );
+          const viewedUsersMap = await fetchUserDetailsForExport(
+              logs.flatMap(log => safeObjectKeys(safeJsonParse(log.user_view, {})))
+          );
+      
+          const createUserSheet = (
+              logs: any[],
+              key: string,
+              parseFunc: (data: any, log: any, userMap: { [key: string]: string }) => any[],
+              userMap: { [key: string]: string }
+          ) => {
+              const userLogs = logs.flatMap(log => {
+                  const parsedData = log[key] ? parseFunc(safeJsonParse(log[key], []), log, userMap) : [];
+                  return parsedData.map((item: any, index: number) => ({
+                      Log_No: startIndex + index + 1,
+                      ...item
+                  }));
+              });
+              return XLSX.utils.json_to_sheet(userLogs);
+          };
+      
+          const parseLikesDislikes = (data: string[], log: any, userMap: { [key: string]: string }) =>
+              data.map(userId => ({
+                  Name: userMap[userId] || 'Unknown',
+              }));
+      
+          const parseShares = (data: any, log: any, userMap: { [key: string]: string }) => {
+              const shares = [];
+              for (const userId of safeObjectKeys(data)) {
+                  for (const shareId of safeObjectKeys(data[userId])) {
+                      const share = data[userId][shareId];
+                      shares.push({
+                          Name: userMap[userId] || 'Unknown',
+                          Time: share.datetime,
+                          Social: share.social
+                      });
+                  }
+              }
+              return shares;
+          };
+      
+          const parseFavs = (data: any, log: any, userMap: { [key: string]: string }) =>
+              safeObjectKeys(data).map((userId) => ({
+                  Name: userMap[userId] || 'Unknown',
+                  Status: data[userId].status,
+                  Time: data[userId].datetime
+              }));
+      
+          const parseViews = (data: any, log: any, userMap: { [key: string]: string }) =>
+              safeObjectKeys(data).map((userId) => ({
+                  Name: userMap[userId] || 'Unknown',
+                  View_Count: safeObjectKeys(data[userId]).length,
+                  Last_View: data[userId][safeObjectKeys(data[userId]).pop()!].datetime
+              }));
+      
+          const stripHtmlTags = (html: string): string => {
+              const doc = new DOMParser().parseFromString(html, 'text/html');
+              return doc.body.textContent || "";
+          };
+      
+          const logsSheet = XLSX.utils.json_to_sheet(logs.map((log, index) => ({
+              No: startIndex + index + 1,
+              title: log.title,
+              date_start: log.date_start,
+              date_end: log.date_end,
+              created_at: log.created_at,
+              user_like: log.user_like ? safeJsonParse(log.user_like, []).length : 0,
+              user_dislike: log.user_dislike ? safeJsonParse(log.user_dislike, []).length : 0,
+              user_share: log.user_share ? safeObjectKeys(safeJsonParse(log.user_share, {})).length : 0,
+              user_fav: log.user_fav ? safeObjectKeys(safeJsonParse(log.user_fav, {})).length : 0,
+              user_view: log.user_view ? safeObjectKeys(safeJsonParse(log.user_view, {})).length : 0,
+              log_rating: log.log_rating,
+              location_detail: stripHtmlTags(log.location_detail),
+              link_map: log.link_map,
+              link_out: log.link_out,
+          })));
+      
+          const userLikesSheet = createUserSheet(logs, 'user_like', parseLikesDislikes, likedUsersMap);
+          const userDislikesSheet = createUserSheet(logs, 'user_dislike', parseLikesDislikes, dislikedUsersMap);
+          const userSharesSheet = createUserSheet(logs, 'user_share', parseShares, sharedUsersMap);
+          const userFavsSheet = createUserSheet(logs, 'user_fav', parseFavs, favUsersMap);
+          const userViewsSheet = createUserSheet(logs, 'user_view', parseViews, viewedUsersMap);
+      
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, logsSheet, "Logs");
+          XLSX.utils.book_append_sheet(wb, userLikesSheet, "User Likes");
+          XLSX.utils.book_append_sheet(wb, userDislikesSheet, "User Dislikes");
+          XLSX.utils.book_append_sheet(wb, userSharesSheet, "User Shares");
+          XLSX.utils.book_append_sheet(wb, userFavsSheet, "User Favs");
+          XLSX.utils.book_append_sheet(wb, userViewsSheet, "User Views");
+      
+          const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+          const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+          saveAs(data, name_page === 'ตารางสอบ' ? "logsExam.xlsx" : "logsTraining.xlsx");
+      };
+      
+    
+    
     const sortLogs = (key: string) => {
         let direction = 'ascending';
         if (sortConfig.key === key && sortConfig.direction === 'ascending') {

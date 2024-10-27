@@ -23,7 +23,7 @@ function App() {
 
 
     { id: 2, log_content: 'logout_page', name_page: 'หน้า LOG-OUT' },
-    { id: 2, log_content: '', name_page: 'All' }
+    {id: 2, log_content: '', name_page: 'All'}
 
   ];
   const HOME = [
@@ -84,16 +84,74 @@ function App() {
 
 
   const [selectedLogContent, setSelectedLogContent] = useState(HOME[0].log_content);
-
+  const { isOpen, onOpen, onClose } = useDisclosure();
   const handleLogContentChange = (event: any) => {
     setSelectedLogContent(event.target.value);
   };
+  const [showBar, setShowBar] = useState(false);
 
-
-
+  const handleDashboardClick = () => {
+    setShowBar(true);
+    onClose()
+  };
   return (
     <>
+      <Box>
+        <Box className='text-[#0E2B81] flex flex-row justify-between items-center mt-5 w-full px-5'>
+          <Box className='animate__animated animate__fadeInUp flex flex-row justify-center items-center'>
+            <Image src={Logo} className='w-10 h-10 ' />
+            <Box className='flex flex-col justify-center items-center'>
+              <Text as='b' fontSize='xl'>AGENCY JOURNEY</Text>
+              <Text fontSize='sm'>ALLIANZ ON BOARDING</Text>
+            </Box>
+          </Box>
+          <IconButton
+            icon={<HamburgerIcon />}
+            aria-label="Open menu"
+            onClick={onOpen}
+            className='animate__animated animate__fadeInUp'
 
+          />
+          <Drawer placement="right" onClose={onClose} isOpen={isOpen}>
+            <DrawerOverlay />
+            <DrawerContent>
+              <DrawerHeader>
+                <IconButton
+                  icon={<CloseIcon />}
+                  aria-label="Close menu"
+                  onClick={onClose}
+
+                />
+              </DrawerHeader>
+              <DrawerBody className='flex flex-col gap-4'>
+                <Text className='animate__animated animate__slideInRight p-2 bg-[#0E2B81] text-white cursor-pointer rounded-lg ' style={{ animationDelay: '0s' }}
+                  onClick={handleDashboardClick}>
+                  Dashboard
+                </Text>
+                <Text className='animate__animated animate__slideInRight p-2 bg-[#0E2B81] text-white cursor-pointer rounded-lg' style={{ animationDelay: '0.1s' }}>
+                  หน้า LOG-IN
+                </Text>
+                <Text className='animate__animated animate__slideInRight p-2 bg-[#0E2B81] text-white cursor-pointer rounded-lg' style={{ animationDelay: '0.2s' }}>
+                  HOME
+                </Text>
+                <Text className='animate__animated animate__slideInRight p-2 bg-[#0E2B81] text-white cursor-pointer rounded-lg' style={{ animationDelay: '0.3s' }}>
+                  Training
+                </Text>
+                <Text className='animate__animated animate__slideInRight p-2 bg-[#0E2B81] text-white cursor-pointer rounded-lg' style={{ animationDelay: '0.4s' }}>
+                  Product
+                </Text>
+                <Text className='animate__animated animate__slideInRight p-2 bg-[#0E2B81] text-white cursor-pointer rounded-lg' style={{ animationDelay: '0.5s' }}>
+                  News
+                </Text>
+                <Text className='animate__animated animate__slideInRight p-2 bg-[#0E2B81] text-white cursor-pointer rounded-lg' style={{ animationDelay: '0.6s' }}>
+                  Tools
+                </Text>
+              </DrawerBody>
+            </DrawerContent>
+          </Drawer>
+        </Box>
+        {showBar && <Bar />}
+      </Box>
       <Box className='xl:flex flex-col justify-start items-center gap-10   text-[#0E2B81] w-full mx-auto px-5 hidden'>
         <Box className='flex flex-col w-full mt-8 ml-10'>
           <Box className='text-[#0E2B81] flex flex-row justify-start items-center gap-5'><Image src={Logo} className='w-10 h-10' /><Box><Text as='b' fontSize='3xl'>AGENCY JOURNEY</Text> <Text fontSize='sm'>ALLIANZ ON BOARDING</Text></Box></Box>

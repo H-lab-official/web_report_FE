@@ -342,56 +342,157 @@ const TableRowTraining: React.FC<TableRowProps> = ({ id, name_page }) => {
         };
     };
 
+    // const exportToExcel = async () => {
+    //     NProgress.start();
+
+    //     try {
+    //         const allData = await fetchAllDataForExport();
+
+    //         // Create sheets
+    //         const wsTrainings = XLSX.utils.json_to_sheet(trainings.map((training, index) => {
+    //             const { activeCount, canceledCount } = filterFavChanges(JSON.parse(training.user_fav));
+    //             const { countBySocial } = countShares(JSON.parse(training.user_share));
+
+    //             return {
+    //                 No: startIndex + index + 1,
+    //                 Title: training.title,
+    //                 Created_At: training.created_at,
+    //                 User_Like_Count: training.user_like ? JSON.parse(training.user_like).length : 0,
+    //                 User_Share_Line: countBySocial.line || 0,
+    //                 User_Share_Facebook: countBySocial.facebook || 0,
+    //                 User_Share_Copy: countBySocial.copy || 0,
+    //                 User_Share_Twitter: countBySocial.twitter || 0,
+    //                 User_Share_WhatsApp: countBySocial.whatsapp || 0,
+    //                 User_Fav_Changes: `Active: ${activeCount}, Canceled: ${canceledCount}`,
+    //                 User_View: Object.keys(JSON.parse(training.user_view)).length,
+    //             };
+    //         }));
+
+    //         const wsUserLikes = XLSX.utils.json_to_sheet(allData.likes);
+    //         const wsUserShares = XLSX.utils.json_to_sheet(allData.shares);
+    //         const wsUserFavs = XLSX.utils.json_to_sheet(allData.favs);
+    //         const wsUserViews = XLSX.utils.json_to_sheet(allData.views);
+
+    //         // Create workbook and append sheets
+    //         const wb = XLSX.utils.book_new();
+    //         XLSX.utils.book_append_sheet(wb, wsTrainings, "Products");
+    //         XLSX.utils.book_append_sheet(wb, wsUserLikes, "User Likes");
+    //         XLSX.utils.book_append_sheet(wb, wsUserShares, "User Shares");
+    //         XLSX.utils.book_append_sheet(wb, wsUserFavs, "User Favs");
+    //         XLSX.utils.book_append_sheet(wb, wsUserViews, "User Views");
+
+    //         // Write the workbook and trigger download
+    //         const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    //         const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    //         saveAs(data, "Trainings_export.xlsx");
+    //     } catch (error) {
+    //         console.error('Error exporting to Excel:', error);
+    //     } finally {
+    //         NProgress.done();
+    //     }
+    // };
+
     const exportToExcel = async () => {
         NProgress.start();
 
         try {
             const allData = await fetchAllDataForExport();
 
-            // Create sheets
-            const wsTrainings = XLSX.utils.json_to_sheet(trainings.map((training, index) => {
-                const { activeCount, canceledCount } = filterFavChanges(JSON.parse(training.user_fav));
-                const { countBySocial } = countShares(JSON.parse(training.user_share));
+            // Safely parse and format training data
+            const formattedTrainings = trainings.map((training, index) => {
+                // Safely parse JSON data with error handling
+                const parseJsonSafely = (jsonString: string, defaultValue: any) => {
+                    try {
+                        return jsonString ? JSON.parse(jsonString) : defaultValue;
+                    } catch (error) {
+                        console.error('Error parsing JSON:', error);
+                        return defaultValue;
+                    }
+                };
 
+                const likes = parseJsonSafely(training.user_like, []);
+                const shares = parseJsonSafely(training.user_share, {});
+                const favs = parseJsonSafely(training.user_fav, {});
+                const views = parseJsonSafely(training.user_view, {});
+
+                // Calculate statistics with null checks
+                const { activeCount = 0, canceledCount = 0 } = filterFavChanges(favs);
+                const { countBySocial = {
+                    line: 0,
+                    facebook: 0,
+                    copy: 0,
+                    twitter: 0,
+                    whatsapp: 0
+                } } = countShares(shares);
+
+                // Return formatted data with safe defaults
                 return {
                     No: startIndex + index + 1,
-                    Title: training.title,
-                    Created_At: training.created_at,
-                    User_Like_Count: training.user_like ? JSON.parse(training.user_like).length : 0,
+                    Title: training.title || 'Untitled',
+                    Created_At: training.created_at || 'No date',
+                    User_Like_Count: Array.isArray(likes) ? likes.length : 0,
+                    User_Share_Total: Object.keys(shares).reduce((total, userId) =>
+                        total + Object.keys(shares[userId] || {}).length, 0
+                    ),
                     User_Share_Line: countBySocial.line || 0,
                     User_Share_Facebook: countBySocial.facebook || 0,
                     User_Share_Copy: countBySocial.copy || 0,
                     User_Share_Twitter: countBySocial.twitter || 0,
                     User_Share_WhatsApp: countBySocial.whatsapp || 0,
-                    User_Fav_Changes: `Active: ${activeCount}, Canceled: ${canceledCount}`,
-                    User_View: Object.keys(JSON.parse(training.user_view)).length,
+                    User_Fav_Active: activeCount,
+                    User_Fav_Canceled: canceledCount,
+                    User_Fav_Total: activeCount + canceledCount,
+                    User_View_Count: Object.keys(views).length,
+                    Last_Updated: new Date().toLocaleString()
                 };
-            }));
+            });
 
-            const wsUserLikes = XLSX.utils.json_to_sheet(allData.likes);
-            const wsUserShares = XLSX.utils.json_to_sheet(allData.shares);
-            const wsUserFavs = XLSX.utils.json_to_sheet(allData.favs);
-            const wsUserViews = XLSX.utils.json_to_sheet(allData.views);
-
-            // Create workbook and append sheets
+            // Create workbook
             const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, wsTrainings, "Products");
-            XLSX.utils.book_append_sheet(wb, wsUserLikes, "User Likes");
-            XLSX.utils.book_append_sheet(wb, wsUserShares, "User Shares");
-            XLSX.utils.book_append_sheet(wb, wsUserFavs, "User Favs");
-            XLSX.utils.book_append_sheet(wb, wsUserViews, "User Views");
 
-            // Write the workbook and trigger download
-            const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
-            const data = new Blob([excelBuffer], { type: "application/octet-stream" });
-            saveAs(data, "Trainings_export.xlsx");
+            // Add main sheet with error handling
+            try {
+                const wsTrainings = XLSX.utils.json_to_sheet(formattedTrainings);
+                XLSX.utils.book_append_sheet(wb, wsTrainings, "Products");
+            } catch (error) {
+                console.error('Error creating Products sheet:', error);
+            }
+
+            // Add detail sheets with error handling
+            const appendSheet = (data: any[], sheetName: string) => {
+                try {
+                    if (Array.isArray(data) && data.length > 0) {
+                        const ws = XLSX.utils.json_to_sheet(data);
+                        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+                    }
+                } catch (error) {
+                    console.error(`Error creating ${sheetName} sheet:`, error);
+                }
+            };
+
+            // Append each detail sheet
+            appendSheet(allData.likes, "User Likes");
+            appendSheet(allData.shares, "User Shares");
+            appendSheet(allData.favs, "User Favs");
+            appendSheet(allData.views, "User Views");
+
+            // Write workbook and trigger download
+            try {
+                const excelBuffer = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+                const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+                const fileName = `Training_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
+                saveAs(data, fileName);
+            } catch (error) {
+                console.error('Error saving Excel file:', error);
+                throw new Error('Failed to generate Excel file');
+            }
         } catch (error) {
-            console.error('Error exporting to Excel:', error);
+            console.error('Export failed:', error);
+            // You might want to show an error message to the user here
         } finally {
             NProgress.done();
         }
     };
-
 
 
     return (

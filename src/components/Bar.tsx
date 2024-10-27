@@ -29,8 +29,28 @@ const Bar = () => {
     };
 
     return (
-        <div>
-            <div className='border-l-orange-300 w-full h-10 flex flex-row justify-evenly items-center mt-10'>
+        <div className='flex flex-col'>
+            <div className='border-l-orange-300 w-full h-10 px-3 flex flex-col justify-evenly items-center mt-10 xl:hidden'>
+                <div onClick={() => setActiveChart('LoginChart')} className={`cursor-pointer border-2 border-[#0E2B81] w-full rounded-full p-3 flex justify-center items-center ${activeChart==='LoginChart'?'bg-[#0E2B81] text-white':''}`}>
+                    Login Chart
+                </div>
+                <div onClick={() => setActiveChart('Top20Chart')} className={`cursor-pointer border-2 border-[#0E2B81] w-full rounded-full p-3 flex justify-center items-center ${activeChart==='Top20Chart'?'bg-[#0E2B81] text-white':''}`}>
+                    Top20 Chart
+                </div>
+                <div onClick={() => setActiveChart('MenuChart')} className={`cursor-pointer border-2 border-[#0E2B81] w-full rounded-full p-3 flex justify-center items-center ${activeChart==='MenuChart'?'bg-[#0E2B81] text-white':''}`}>
+                    Menu Chart
+                </div>
+                <div onClick={() => setActiveChart('IconChart')} className={`cursor-pointer border-2 border-[#0E2B81] w-full rounded-full p-3 flex justify-center items-center ${activeChart==='IconChart'?'bg-[#0E2B81] text-white':''}`}>
+                    Icon Chart
+                </div>
+                <div onClick={() => setActiveChart('ButtonChart')} className={`cursor-pointer border-2 border-[#0E2B81] w-full rounded-full p-3 flex justify-center items-center ${activeChart==='ButtonChart'?'bg-[#0E2B81] text-white':''}`}>
+                    Button Chart
+                </div>
+                {/* <div onClick={() => setActiveChart('LoginAndLogoutChart')} className={`cursor-pointer border-2 border-[#0E2B81] w-48 rounded-full p-3 flex justify-center items-center ${activeChart==='LoginAndLogoutChart'?'bg-[#0E2B81] text-white':''}`}>
+                    Login&LogoutChart
+                </div> */}
+            </div>
+            <div className='border-l-orange-300 w-full h-10 hidden flex-row justify-evenly items-center mt-10 xl:flex'>
                 <div onClick={() => setActiveChart('LoginChart')} className={`cursor-pointer border-2 border-[#0E2B81] w-48 rounded-full p-3 flex justify-center items-center ${activeChart==='LoginChart'?'bg-[#0E2B81] text-white':''}`}>
                     Login Chart
                 </div>
@@ -50,8 +70,7 @@ const Bar = () => {
                     Login&LogoutChart
                 </div> */}
             </div>
-
-            <div className='mt-8'>
+            <div className='mt-20'>
                 {renderChart()}
             </div>
         </div>
