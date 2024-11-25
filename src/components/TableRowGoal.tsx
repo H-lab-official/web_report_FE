@@ -310,7 +310,7 @@ const TableRowGoal: React.FC<TableRowProps> = ({ id, name_page }) => {
                                             <Thead>
                                                 <Tr>
                                                     <Th>No.</Th>
-                                                    <Th>userID <ArrowUpDownIcon onClick={() => sortLogs('user_id')} className='cursor-pointer' /></Th>
+                                                    <Th>AGENCY code <ArrowUpDownIcon onClick={() => sortLogs('user_id')} className='cursor-pointer' /></Th>
                                                     <Th>Name <ArrowUpDownIcon onClick={() => sortLogs('name')} className='cursor-pointer' /></Th>
                                                     <Th>current_rank<ArrowUpDownIcon onClick={() => sortLogs('current_rank')} className='cursor-pointer' /></Th>
                                                     <Th>created_at <ArrowUpDownIcon onClick={() => sortLogs('created_at')} className='cursor-pointer' /></Th>

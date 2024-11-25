@@ -210,22 +210,22 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
 
                 {lablename === 'หน้า PDPA' && <Td>
                     <Select
-                        placeholder="Select PDPA Status"
+                        placeholder="All"
                         value={searchPdpa}
                         onChange={(e) => setSearchPdpa(e.target.value)}
                     >
-                        <option value="Yes">Yes</option>
+                        <option value="Yes">Checked</option>
                         <option value="NotChecked">Not Checked</option>
                     </Select>
                 </Td>}
                 {lablename === 'หน้า VDO' &&
                     <Td>
                         <Select
-                            placeholder="Select Vdo Status"
+                            placeholder="All"
                             value={searchVdo}
                             onChange={(e) => setSearchVdo(e.target.value)}
                         >
-                            <option value="Yes">Yes</option>
+                            <option value="Yes">Checked</option>
                             <option value="NotChecked">Not Checked</option>
                         </Select>
                     </Td>}
@@ -289,7 +289,7 @@ const TableRowUsers: React.FC<TableRowProps> = ({ id, lablename }) => {
                                             <Thead>
                                                 <Tr>
                                                     <Th>No.</Th>
-                                                    <Th>User id <ArrowUpDownIcon onClick={() => sortUsers('id')} /></Th>
+                                                    <Th>AGENCY code <ArrowUpDownIcon onClick={() => sortUsers('id')} /></Th>
                                                     <Th>Name <ArrowUpDownIcon onClick={() => sortUsers('name')} /></Th>
                                                     {lablename === 'หน้า PDPA' && <Th>PDPA Status </Th>}
                                                     {lablename === 'หน้า VDO' && <Th>Vdo Status </Th>}

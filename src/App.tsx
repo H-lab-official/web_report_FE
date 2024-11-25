@@ -15,6 +15,7 @@ import TableRowUsersPosition from './components/TableRowUsersPosition'
 import TableRowNews from './components/TableRowNews'
 import TableRowActivitys from './components/TableRowActivitys'
 import TableRowExam from './components/TableRowEXAM'
+import TableFHC from './components/TableFHC'
 import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons'
 import Bar from '@/components/Bar'
 function App() {
@@ -152,13 +153,13 @@ function App() {
               flex="1"
               textAlign="center"
             >Tools</Tab>
-            {/* <Tab
-            _selected={selectedTabStyle}
-            _hover={hoverTabStyle}
-            {...normalTabStyle}
-            flex="1"
-            textAlign="center"
-          >User</Tab> */}
+            <Tab
+              _selected={selectedTabStyle}
+              _hover={hoverTabStyle}
+              {...normalTabStyle}
+              flex="1"
+              textAlign="center"
+            >FHC</Tab>
           </TabList>
           <TabPanels w="100%">
             <TabPanel>
@@ -368,27 +369,14 @@ function App() {
                 </Table>
               </TableContainer>
             </TabPanel>
-            {/* <TabPanel>
-            <TableContainer>
-              <Table variant='simple'>
-                <Thead>
-                  <Tr>
-                    <Th>No.</Th>
-                    <Th>log_content </Th>
-                    <Th>userID</Th>
-                    <Th>Name</Th>
-                    <Th>current_rank</Th>
-                    <Th>PDPA Status/Vdo Status</Th>
-                    <Th>Start Date</Th>
-                    <Th>End Date</Th>
-                    <Th>Active</Th>
-                  </Tr>
-                </Thead>
-                <TableRowGoal id={1} name_page="My Goal" />
-                <TableRowUsers id={4} lablename='หน้า VDO' />
-              </Table>
-            </TableContainer>
-          </TabPanel> */}
+            <TabPanel>
+              <TableContainer>
+                <Table variant='simple'>
+
+                  <TableFHC />
+                </Table>
+              </TableContainer>
+            </TabPanel>
           </TabPanels>
         </Tabs>
 
